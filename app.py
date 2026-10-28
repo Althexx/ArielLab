@@ -19,6 +19,7 @@ CORSO_EXE = os.path.join(IASD, 'ARIEL', 'New ARIEL Release', 'windows', 'ARIEL-S
 CORSO_TEMPLATE = os.path.join(IASD, 'ARIEL', 'New ARIEL Release', 'HLInputs_TEMPLATE.yaml')
 CORSO_INPUTS = os.path.join(IASD, 'ARIEL', 'Topic_3_Mach1.8_Airliner_100pax', 'Topic_3_Mach1.8_Airliner_100pax', 'windows', 'inputs')
 LAVORO = os.path.join(QUI, 'lavoro')
+INIZIALI = os.path.join(QUI, 'inputs_iniziali')
 PROVE = os.path.join(QUI, 'prove')
 PORTA = 8790
 PROMPT = b'Select an option [1-4]:'
@@ -393,9 +394,13 @@ def prepara():
         if not os.path.isfile(CORSO_EXE):  # su un altro PC l'eseguibile si mette a mano in lavoro/
             sys.exit('ARIEL-SST.exe non trovato. Copia ARIEL-SST.exe (release del 27/10, cartella windows) in:\n  %s\npoi riavvia.' % exe)
         shutil.copy2(CORSO_EXE, exe)
+    # su un altro PC la cartella del corso non c'è: input del pacchetto e database del team da inputs_iniziali/
+    src = CORSO_INPUTS if os.path.isdir(CORSO_INPUTS) else INIZIALI
     for f in ('StatDatabase.xlsx', 'HLInputs.yaml'):
         if not os.path.isfile(os.path.join(LAVORO, 'inputs', f)):
-            shutil.copy2(os.path.join(CORSO_INPUTS, f), os.path.join(LAVORO, 'inputs', f))
+            if not os.path.isfile(os.path.join(src, f)):
+                sys.exit('Manca %s. Copialo (dallo zip ARIEL_Lab del team) in:\n  %s\npoi riavvia.' % (f, INIZIALI))
+            shutil.copy2(os.path.join(src, f), os.path.join(LAVORO, 'inputs', f))
     valori, note = converti(open(os.path.join(LAVORO, 'inputs', 'HLInputs.yaml'), encoding='utf-8').read(), template)
     return template, exe, valori, note
 

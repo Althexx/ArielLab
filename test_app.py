@@ -173,3 +173,30 @@ class Lavoro(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Prepara(unittest.TestCase):
+    def test_su_un_altro_pc_usa_gli_input_iniziali(self):
+        d = tempfile.mkdtemp()
+        try:
+            lav = os.path.join(d, 'lavoro')
+            os.makedirs(lav)
+            open(os.path.join(lav, 'ARIEL-SST.exe'), 'w').close()
+            ini = os.path.join(d, 'inputs_iniziali')
+            os.makedirs(ini)
+            shutil.copy2(os.path.join(DATI, 'HLInputs_vecchio.yaml'), os.path.join(ini, 'HLInputs.yaml'))
+            open(os.path.join(ini, 'StatDatabase.xlsx'), 'w').close()
+            vecchi = (app.LAVORO, app.CORSO_INPUTS, app.INIZIALI)
+            app.LAVORO, app.CORSO_INPUTS, app.INIZIALI = lav, os.path.join(d, 'non_esiste'), ini
+            try:
+                app.prepara()
+                for f in ('HLInputs.yaml', 'StatDatabase.xlsx'):
+                    self.assertTrue(os.path.isfile(os.path.join(lav, 'inputs', f)), f)
+                os.remove(os.path.join(lav, 'inputs', 'StatDatabase.xlsx'))
+                os.remove(os.path.join(ini, 'StatDatabase.xlsx'))
+                with self.assertRaises(SystemExit):
+                    app.prepara()
+            finally:
+                app.LAVORO, app.CORSO_INPUTS, app.INIZIALI = vecchi
+        finally:
+            shutil.rmtree(d)

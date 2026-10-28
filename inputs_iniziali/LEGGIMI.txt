@@ -1,0 +1,2 @@
+Qui vanno HLInputs.yaml e StatDatabase.xlsx, presi dallo zip ARIEL_Lab del team (condiviso in privato).
+Non sono nel repository pubblico.
