@@ -12,7 +12,7 @@ def calcolo():
     if os.path.isdir('outputs'):
         shutil.rmtree('outputs')
     shutil.copytree(os.path.join(ESEMPIO, 'outputs'), 'outputs')
-    print('Iteration: 1\nMTOM=114206 [kg]\nConverged in 33 iterations')
+    print('Iteration: 1\nMTOM=114206 [kg]\nFuel_f=48.98 %\nConverged in 33 iterations')
 
 while True:
     sys.stdout.write(MENU); sys.stdout.flush()

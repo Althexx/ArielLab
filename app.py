@@ -308,6 +308,19 @@ class Lab:
     def cancella(self, pid):
         shutil.rmtree(self._p(pid))
 
+    def esporta(self, pid):
+        """Una prova nel formato che legge la Control Room (formato 1)."""
+        p, d = self.prova(pid), self._p(pid)
+        log = open(os.path.join(d, 'log.txt'), encoding='utf-8').read()
+        f, it = re.findall(r'Fuel_f=\s*([\d.]+)\s*%', log), re.search(r'Converged in (\d+) iterations', log)
+        dbs = sorted(x for x in os.listdir(os.path.join(self.dir_lavoro, 'inputs')) if x.lower().endswith('.xlsx'))
+        nome = lambda k: re.sub(r'\s*\[[^\]]*\]$', '', k).split('/')[-1]  # l'unita' puo' contenere '/'
+        return {'tool': 'ARIEL-SST', 'formato': 1, 'prova': {k: p.get(k) for k in ('id', 'nome', 'data', 'nota')},
+                'db': dbs[0] if dbs else None, 'hl': {nome(k): x for k, x in p['valori'].items()},
+                'results': _y(os.path.join(d, 'outputs', 'Layer1', 'results.yaml')),
+                'mission': _y(os.path.join(d, 'outputs', 'MissionProfile.yaml')),
+                'log': {'Fuel_f': float(f[-1]) if f else None, 'iterazioni': int(it.group(1)) if it else None, 'converge': bool(it)}}
+
     def stato(self):
         pr = self.prove()
         return {'schema': self.sch, 'valori': pr[0]['valori'] if pr else self.valori0, 'note': self.note,
@@ -323,6 +336,10 @@ class Lab:
         for k in ris:
             w.writerow([k] + [p['riepilogo'].get(k) for p in pr])
         return f.getvalue()
+
+
+def esporta(lab, pid):
+    return lab.esporta(pid)
 
 
 # ---------------------------------------------------------------- server HTTP (solo 127.0.0.1)
@@ -356,6 +373,9 @@ def server(lab, porta):
                 if p == '/api/csv':
                     ids = parse_qs(u.query).get('ids', [''])[0].split(',')
                     return self._invia(lab.csv(ids), 'text/csv; charset=utf-8', extra=[('Content-Disposition', 'attachment; filename="prove_ariel.csv"')])
+                m = re.fullmatch(r'/api/esporta/([\w.\-]+)', p)
+                if m:
+                    return self._invia(lab.esporta(m.group(1)), extra=[('Content-Disposition', 'attachment; filename="ariel_%s.json"' % m.group(1))])
                 if p.startswith('/prove/'):
                     f = os.path.realpath(os.path.join(lab.dir_prove, p[len('/prove/'):]))
                     if f.startswith(os.path.realpath(lab.dir_prove) + os.sep) and os.path.isfile(f):

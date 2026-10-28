@@ -134,7 +134,7 @@ svg text{fill:var(--mut);font-size:11px}
 </aside>
 <main>
   <section id="t-prova">
-    <div class="ptop"><b id="ptitle"></b><span class="note" id="pdata"></span><span class="vs" id="pvs"></span></div>
+    <div class="ptop"><b id="ptitle"></b><span class="note" id="pdata"></span><span class="vs" id="pvs"></span><button class="btn sm" id="esp" title="Scarica la prova in un file JSON per la Control Room">Esporta per la Control Room</button></div>
     <div id="perr" class="box errbox hid"></div>
     <div id="kpis"></div>
     <div class="box" id="barbox"><h2>Spinta richiesta da ogni vincolo</h2><p class="note" style="margin:-6px 0 10px">T/W richiesto da ciascuna fase al carico alare di progetto. Il vincolo più alto fissa la spinta (in arancione).</p><div class="bars" id="bars"></div></div>
@@ -239,6 +239,7 @@ $('#lista').addEventListener('click',async e=>{const t=e.target.closest('[data-v
   if(d.i){V={...p(d.i).valori};campi()}
   if(d.n){const q=p(d.n),n=prompt('Nome della prova',q.nome);if(n==null)return;const no=prompt('Nota',q.nota);await api('/api/prova/'+d.n,{nome:n,nota:no??q.nota});carica()}
   if(d.x&&confirm('Cancellare la prova "'+p(d.x).nome+'"?')){await api('/api/prova/'+d.x+'/cancella',{});CHK.delete(d.x);if(SEL===d.x)SEL=null;carica()}});
+$('#esp').onclick=()=>{if(SEL)location.href='/api/esporta/'+encodeURIComponent(SEL)};
 $('#csv').onclick=()=>{if(CHK.size)location.href='/api/csv?ids='+[...CHK].join(',')};
 function confronto(){const ps=S.prove.filter(p=>CHK.has(p.id)).sort((a,b)=>(b.rif-a.rif)||(a.ts-b.ts));/* prima il riferimento, poi in ordine di tempo */
   if(ps.length<2){$('#cmp').innerHTML='<p class="note" style="margin:0">Spunta da 2 a 4 prove nella tabella qui sopra. La prima colonna è il riferimento (o la prova più vecchia); in giallo i valori diversi da lei.</p>';return}

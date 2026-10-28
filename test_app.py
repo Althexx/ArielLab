@@ -118,6 +118,7 @@ class Lavoro(unittest.TestCase):
     def setUpClass(cls):
         cls.dir = tempfile.mkdtemp()
         os.makedirs(os.path.join(cls.dir, 'lavoro', 'inputs'))
+        open(os.path.join(cls.dir, 'lavoro', 'inputs', 'StatDatabase.xlsx'), 'w').close()
         cls.ariel = app.Ariel([sys.executable, '-u', os.path.join(QUI, 'fake_ariel.py'), DATI], os.path.join(cls.dir, 'lavoro'))
         cls.lab = app.Lab(TEMPLATE, cls.ariel, os.path.join(cls.dir, 'lavoro'), os.path.join(cls.dir, 'prove'), valori_validi())
 
@@ -167,6 +168,48 @@ class Lavoro(unittest.TestCase):
             self.assertEqual(img[:4], b'\x89PNG')
             with self.assertRaises(urllib.error.HTTPError):
                 urllib.request.urlopen(base + '/prove/../app.py')
+        finally:
+            srv.shutdown()
+
+    def _prova_ok(self):
+        return self.lab.calcola(valori_validi(), 'export', 'nota export')
+
+    def test_5_esporta(self):
+        pid = self._prova_ok()['id']
+        e = app.esporta(self.lab, pid)
+        self.assertEqual(e['tool'], 'ARIEL-SST'); self.assertEqual(e['formato'], 1)
+        self.assertEqual(e['prova'], {'id': pid, 'nome': 'export', 'data': self.lab.prova(pid)['data'], 'nota': 'nota export'})
+        self.assertEqual(e['db'], 'StatDatabase.xlsx')
+        self.assertIn('maximum_take-off_mass_[kg]', e['results']); self.assertIn('range', e['hl'])
+        self.assertEqual(e['hl']['range'], 6000); self.assertEqual(e['hl']['H_Tail'], '1'); self.assertIn('sfc', e['hl'])
+        self.assertEqual(e['hl']['subsonic_cruise_distance'], 0.1)
+        self.assertIn('Take-off', e['mission'])
+        self.assertEqual(e['log'], {'Fuel_f': 48.98, 'iterazioni': 33, 'converge': True})
+        self.assertIsInstance(e['log']['converge'], bool)
+
+    def test_6_esporta_server(self):
+        pid = self._prova_ok()['id']
+        srv = app.server(self.lab, 0)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            r = urllib.request.urlopen('http://127.0.0.1:%d/api/esporta/%s' % (srv.server_address[1], pid))
+            self.assertEqual(r.status, 200)
+            self.assertIn('application/json', r.headers['Content-Type'])
+            self.assertEqual(r.headers['Content-Disposition'], 'attachment; filename="ariel_%s.json"' % pid)
+            self.assertEqual(json.loads(r.read())['prova']['id'], pid)
+        finally:
+            srv.shutdown()
+
+    def test_7_esporta_prova_inesistente(self):
+        srv = app.server(self.lab, 0)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = 'http://127.0.0.1:%d' % srv.server_address[1]
+        try:
+            for url in ("/api/esporta/nonc-e", "/api/esporta/..%2F..%2Fapp.py"):
+                with self.assertRaises(urllib.error.HTTPError) as c:
+                    urllib.request.urlopen(base + url)
+                self.assertEqual(c.exception.code, 404)
+                self.assertIn('errore', json.loads(c.exception.read()))
         finally:
             srv.shutdown()
 
