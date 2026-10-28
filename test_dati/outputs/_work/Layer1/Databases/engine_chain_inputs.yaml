@@ -1,0 +1,124 @@
+created: '2026-10-27 10:45:53'
+info:
+  n_eng: 4.0
+  mtom: 137696.1392946319
+  S: 290.1825854955032
+  F_sub: 37159.516521849386
+  F_sup: 36444.277888535966
+  M_sup: 1.8
+  h_sup: 18000.0
+  pax: 100.0
+  range_km: 6000.0
+  fuel_L1: 67492.14253294271
+  layer1_iterations: 33
+  tw_design: 0.40277212182808775
+  ws_design: 474.51551601385023
+segments:
+- name: take-off
+  tw_mc: 0.3993639905069279
+  m_seg: 137696.1392946319
+  fuel: 4130.884178838961
+  t: 20.99
+  M: 0.35
+  h: 0.0
+  mode:
+  - - rating
+    - 1.0
+- name: climb-out (2nd segment)
+  tw_mc: 0.1539980777969891
+  m_seg: 133565.25511579294
+  fuel: 2003.4788267368958
+  t: 24.51
+  M: 0.4
+  h: 100.0
+  mode:
+  - - rating
+    - 0.65
+  - - rating
+    - 1.0
+- name: subsonic climb
+  tw_mc: 0.2609400005738362
+  m_seg: 131561.77628905606
+  fuel: 1973.4266443358426
+  t: 2114.26
+  M: 0.538
+  h: 5550.0
+  mode:
+  - - thrust
+    - 47388.693859090235
+  - - rating
+    - 1.0
+- name: subsonic cruise
+  tw_mc: 0.40277212182808775
+  m_seg: 129588.34964472022
+  fuel: 10849.656372097554
+  t: 2541.05
+  M: 0.8
+  h: 11000.0
+  mode:
+  - - thrust
+    - 37159.516521849386
+  - - rating
+    - 1.0
+- name: supersonic climb/acceleration
+  tw_mc: 0.32050511754572586
+  m_seg: 118738.69327262267
+  fuel: 16302.822586331089
+  t: 577.88
+  M: 1.368
+  h: 14500.0
+  mode:
+  - - path
+    - - - 1.368
+        - 14500.0
+      - - 1.584
+        - 16250.0
+      - - 1.8
+        - 18000.0
+  F_check: 36923.59020679916
+- name: supersonic cruise
+  tw_mc: 0.34610913128621495
+  m_seg: 102435.87068629157
+  fuel: 30724.572433944795
+  t: 8352.36
+  M: 1.8
+  h: 18000.0
+  mode:
+  - - design
+    - 36444.277888535966
+- name: descent
+  tw_mc: .nan
+  m_seg: 71711.29825234678
+  fuel: 1075.6694737852026
+  t: 3515.62
+  M: 0.3
+  h: 7250.0
+  mode:
+  - - rating
+    - 0.15
+  - - rating
+    - 0.34
+- name: approach
+  tw_mc: .nan
+  m_seg: 71711.29825234678
+  fuel: 78.84811354730762
+  t: 39.18
+  M: 0.3
+  h: 0.0
+  mode:
+  - - rating
+    - 0.34
+- name: landing/taxi-in (idle)
+  tw_mc: .nan
+  m_seg: 71711.29825234678
+  fuel: 352.7839033250716
+  t: .nan
+  M: 0.0
+  h: 0.0
+  mode:
+  - - rating
+    - 0.058
+  - - rating
+    - 0.15
+  - - rating
+    - 0.34

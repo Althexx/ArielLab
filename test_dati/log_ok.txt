@@ -1,0 +1,294 @@
+
+==================================================================
+  ARIEL-SST 2.0 - course edition
+==================================================================
+  1  Full run: aircraft design + engine and emissions
+  2  Aircraft design only
+  3  Engine and emissions only, on the last aircraft design
+  4  Exit
+==================================================================
+Select an option [1-4]: 
+Running ARIEL-SST 2.0... 
+Horizontal Tail included
+Canard included
+Mission profile: subsonic climb point Mach 0.538 at 5550 m, supersonic climb point Mach 1.368 at 14500 m (constant dynamic pressure of the destination cruise, at 0.5 of the segment altitude)
+Layer 1 beginning...
+
+Iteration: 1
+MTOM difference (k-(k-1)) [kg]: 1446.6102386472921
+MTOM=114206 [kg]
+OEM_f=43.47 %
+Fuel_f=48.21 %
+Payload_f=8.32 %
+Wing Area=240.68 [m2]
+
+Iteration: 2
+MTOM difference (k-(k-1)) [kg]: 2362.2179952960287
+MTOM=116568 [kg]
+OEM_f=43.14 %
+Fuel_f=48.71 %
+Payload_f=8.15 %
+Wing Area=245.66 [m2]
+
+Iteration: 3
+MTOM difference (k-(k-1)) [kg]: 2122.917624701091
+MTOM=118691 [kg]
+OEM_f=43.26 %
+Fuel_f=48.73 %
+Payload_f=8.00 %
+Wing Area=250.13 [m2]
+
+Iteration: 4
+MTOM difference (k-(k-1)) [kg]: 1910.2217396727065
+MTOM=120601 [kg]
+OEM_f=43.36 %
+Fuel_f=48.76 %
+Payload_f=7.88 %
+Wing Area=254.16 [m2]
+
+Iteration: 5
+MTOM difference (k-(k-1)) [kg]: 1733.3473732838029
+MTOM=122334 [kg]
+OEM_f=43.45 %
+Fuel_f=48.79 %
+Payload_f=7.77 %
+Wing Area=257.81 [m2]
+
+Iteration: 6
+MTOM difference (k-(k-1)) [kg]: 1574.0329528071452
+MTOM=123908 [kg]
+OEM_f=43.52 %
+Fuel_f=48.81 %
+Payload_f=7.67 %
+Wing Area=261.13 [m2]
+
+Iteration: 7
+MTOM difference (k-(k-1)) [kg]: 1415.5115655863483
+MTOM=125324 [kg]
+OEM_f=43.59 %
+Fuel_f=48.83 %
+Payload_f=7.58 %
+Wing Area=264.11 [m2]
+
+Iteration: 8
+MTOM difference (k-(k-1)) [kg]: 1290.2179240448459
+MTOM=126614 [kg]
+OEM_f=43.65 %
+Fuel_f=48.85 %
+Payload_f=7.50 %
+Wing Area=266.83 [m2]
+
+Iteration: 9
+MTOM difference (k-(k-1)) [kg]: 1156.4775412031304
+MTOM=127771 [kg]
+OEM_f=43.71 %
+Fuel_f=48.86 %
+Payload_f=7.44 %
+Wing Area=269.27 [m2]
+
+Iteration: 10
+MTOM difference (k-(k-1)) [kg]: 1057.5824234840984
+MTOM=128828 [kg]
+OEM_f=43.75 %
+Fuel_f=48.88 %
+Payload_f=7.37 %
+Wing Area=271.49 [m2]
+
+Iteration: 11
+MTOM difference (k-(k-1)) [kg]: 950.6869018163707
+MTOM=129779 [kg]
+OEM_f=43.79 %
+Fuel_f=48.89 %
+Payload_f=7.32 %
+Wing Area=273.5 [m2]
+
+Iteration: 12
+MTOM difference (k-(k-1)) [kg]: 852.1642427049665
+MTOM=130631 [kg]
+OEM_f=43.83 %
+Fuel_f=48.89 %
+Payload_f=7.27 %
+Wing Area=275.29 [m2]
+
+Iteration: 13
+MTOM difference (k-(k-1)) [kg]: 787.3803312199016
+MTOM=131418 [kg]
+OEM_f=43.86 %
+Fuel_f=48.91 %
+Payload_f=7.23 %
+Wing Area=276.95 [m2]
+
+Iteration: 14
+MTOM difference (k-(k-1)) [kg]: 706.1917166884232
+MTOM=132125 [kg]
+OEM_f=43.89 %
+Fuel_f=48.92 %
+Payload_f=7.19 %
+Wing Area=278.44 [m2]
+
+Iteration: 15
+MTOM difference (k-(k-1)) [kg]: 631.2259862557112
+MTOM=132756 [kg]
+OEM_f=43.92 %
+Fuel_f=48.92 %
+Payload_f=7.16 %
+Wing Area=279.77 [m2]
+
+Iteration: 16
+MTOM difference (k-(k-1)) [kg]: 585.9511030844296
+MTOM=133342 [kg]
+OEM_f=43.94 %
+Fuel_f=48.93 %
+Payload_f=7.12 %
+Wing Area=281.01 [m2]
+
+Iteration: 17
+MTOM difference (k-(k-1)) [kg]: 526.9566935263574
+MTOM=133869 [kg]
+OEM_f=43.96 %
+Fuel_f=48.94 %
+Payload_f=7.10 %
+Wing Area=282.12 [m2]
+
+Iteration: 18
+MTOM difference (k-(k-1)) [kg]: 471.8648336856568
+MTOM=134341 [kg]
+OEM_f=43.98 %
+Fuel_f=48.94 %
+Payload_f=7.07 %
+Wing Area=283.11 [m2]
+
+Iteration: 19
+MTOM difference (k-(k-1)) [kg]: 425.1711385437229
+MTOM=134766 [kg]
+OEM_f=44.00 %
+Fuel_f=48.95 %
+Payload_f=7.05 %
+Wing Area=284.01 [m2]
+
+Iteration: 20
+MTOM difference (k-(k-1)) [kg]: 378.25993932184065
+MTOM=135144 [kg]
+OEM_f=44.02 %
+Fuel_f=48.95 %
+Payload_f=7.03 %
+Wing Area=284.8 [m2]
+
+Iteration: 21
+MTOM difference (k-(k-1)) [kg]: 342.5862265637261
+MTOM=135487 [kg]
+OEM_f=44.03 %
+Fuel_f=48.95 %
+Payload_f=7.01 %
+Wing Area=285.53 [m2]
+
+Iteration: 22
+MTOM difference (k-(k-1)) [kg]: 328.34764020709554
+MTOM=135815 [kg]
+OEM_f=44.04 %
+Fuel_f=48.97 %
+Payload_f=6.99 %
+Wing Area=286.22 [m2]
+
+Iteration: 23
+MTOM difference (k-(k-1)) [kg]: 293.347113281925
+MTOM=136108 [kg]
+OEM_f=44.05 %
+Fuel_f=48.97 %
+Payload_f=6.98 %
+Wing Area=286.84 [m2]
+
+Iteration: 24
+MTOM difference (k-(k-1)) [kg]: 263.12924703690805
+MTOM=136371 [kg]
+OEM_f=44.06 %
+Fuel_f=48.97 %
+Payload_f=6.97 %
+Wing Area=287.39 [m2]
+
+Iteration: 25
+MTOM difference (k-(k-1)) [kg]: 232.29844979662448
+MTOM=136604 [kg]
+OEM_f=44.08 %
+Fuel_f=48.97 %
+Payload_f=6.95 %
+Wing Area=287.88 [m2]
+
+Iteration: 26
+MTOM difference (k-(k-1)) [kg]: 211.59581311047077
+MTOM=136815 [kg]
+OEM_f=44.08 %
+Fuel_f=48.97 %
+Payload_f=6.94 %
+Wing Area=288.33 [m2]
+
+Iteration: 27
+MTOM difference (k-(k-1)) [kg]: 187.98730734488345
+MTOM=137003 [kg]
+OEM_f=44.09 %
+Fuel_f=48.97 %
+Payload_f=6.93 %
+Wing Area=288.72 [m2]
+
+Iteration: 28
+MTOM difference (k-(k-1)) [kg]: 171.21209040709073
+MTOM=137175 [kg]
+OEM_f=44.10 %
+Fuel_f=48.98 %
+Payload_f=6.93 %
+Wing Area=289.08 [m2]
+
+Iteration: 29
+MTOM difference (k-(k-1)) [kg]: 152.0517416249495
+MTOM=137327 [kg]
+OEM_f=44.11 %
+Fuel_f=48.98 %
+Payload_f=6.92 %
+Wing Area=289.4 [m2]
+
+Iteration: 30
+MTOM difference (k-(k-1)) [kg]: 134.6167904237809
+MTOM=137461 [kg]
+OEM_f=44.11 %
+Fuel_f=48.98 %
+Payload_f=6.91 %
+Wing Area=289.69 [m2]
+
+Iteration: 31
+MTOM difference (k-(k-1)) [kg]: 124.91558771530981
+MTOM=137586 [kg]
+OEM_f=44.12 %
+Fuel_f=48.98 %
+Payload_f=6.90 %
+Wing Area=289.95 [m2]
+
+Iteration: 32
+MTOM difference (k-(k-1)) [kg]: 110.03102154526277
+MTOM=137696 [kg]
+OEM_f=44.12 %
+Fuel_f=48.98 %
+Payload_f=6.90 %
+Wing Area=290.18 [m2]
+
+Iteration: 33
+MTOM difference (k-(k-1)) [kg]: 97.46323831082555
+MTOM=137794 [kg]
+OEM_f=44.13 %
+Fuel_f=48.98 %
+Payload_f=6.89 %
+Wing Area=290.39 [m2]
+Converged in 33 iterations
+
+
+Results saved in: C:\Users\PC\AppData\Local\Temp\claude\ariel_prova\outputs
+Execution time of ARIEL-SST 2.0 has been 6.756 seconds
+
+==================================================================
+  ARIEL-SST 2.0 - course edition
+==================================================================
+  1  Full run: aircraft design + engine and emissions
+  2  Aircraft design only
+  3  Engine and emissions only, on the last aircraft design
+  4  Exit
+==================================================================
+Select an option [1-4]: 

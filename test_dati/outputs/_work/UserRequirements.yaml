@@ -1,0 +1,64 @@
+H_Tail: '1'
+Canard: '1'
+MTOW_Tolerance: 100
+payload:
+  passenger_number [-]: 100
+  passenger_weight [kg]: 90
+crew:
+  crew_number [-]: 5
+  crew_weight [kg]: 100
+flight_expected_performances:
+  mach [-]: 1.8
+  range [km]: 6000
+  sfc [(kg/s)/N]: 3.0e-05
+  gradient_sub_climb [%]: 0.03
+  gradient_sup_climb [%]: 0.03
+  gradient_descend [%]: 0.05
+vehicle_characteristics:
+  number_engines [-]: 4
+  take_off_cl_max [-]: 1.18
+  landing_cl_max [-]: 0.8
+operational_scenario_characteristics:
+  max_take_off_field_length [m]: 2500
+  max_landing_field_length [m]: 4000
+  take_off_mach [-]: 0.35
+  take_off_altitude [m]: 0
+  take_off_alfa [deg]: 20
+  2nd_segment_mach [-]: 0.4
+  2nd_segment_alfa [deg]: 15
+  subsonic_climb_alfa [deg]: 10
+  subsonic_climb_throttle [%]: 0.9
+  subsonic_cruise_mach [-]: 0.8
+  subsonic_cruise_altitude [m]: 11000
+  subsonic_cruise_alfa [deg]: 5
+  subsonic_cruise_throttle [%]: 0.8
+  subsonic_cruise_distance [%]: 0.1
+  supersonic_climb_alfa [deg]: 3
+  supersonic_climb_throttle [%]: 0.9
+  supersonic_cruise_alfa [deg]: 1
+  supersonic_cruise_altitude [m]: 18000
+  supersonic_cruise_throttle [%]: 1
+  landing_mach [-]: 0.3
+  landing_altitude [m]: 0
+  landing_alfa [deg]: 3
+  take_off_throttle [%]: 0.95
+  2nd_segment_altitude [m]: 100
+  instantaneous_turn_mach [-]: 0.5
+  instantaneous_turn_altitude [m]: 3000
+  instantaneous_turn_alfa [deg]: 1
+  sustained_turn_mach [-]: 0.5
+  sustained_turn_altitude [m]: 3000
+  sustained_turn_alfa [deg]: 1
+  sustained_turn_throttle [%]: 0.6
+  subsonic_climb_mach [-]: 0.538
+  subsonic_climb_altitude [m]: 5550
+  supersonic_climb_mach [-]: 1.368
+  supersonic_climb_altitude [m]: 14500
+  supersonic_cruise_mach [-]: 1.8
+Layer2: n
+PropulsionModel: database
+ThrustLapse: mattingly
+ThrottleRatio: 1.15
+mission_model:
+  climb_point_altitude_fraction [-]: 0.5
+  supersonic_climb_mach_min [-]: 1.1

@@ -1,0 +1,47 @@
+W/S_[kg/m2]: 474.51551601385023
+aircraft height [m]: 11.41
+aircraft volume [m3]: 256.7118191869542
+canard area [m2]: 26.05
+canard aspect ratio [-]: 2.39
+canard mean aerodynamic chord [m]: 3.5
+canard root [m]: 4.71
+canard span [m]: 7.89
+canard start point [%]: 0.07
+canard sweep angle [deg]: 25.51
+canard taper ratio [-]: 0.403
+canard tip [m]: 1.9
+fuel capacity [kg]: 67492.14253294271
+fuselage height [m]: 3.09
+fuselage length [m]: 61.08
+fuselage wetted area [m2]: 513.365184
+fuselage width [m]: 2.94
+h-tail area [m2]: 69.78
+h-tail aspect ratio [-]: 3.14
+h-tail mean aerodynamic chord [m]: 5.25
+h-tail root [m]: 7.46
+h-tail span [m]: 14.8
+h-tail sweep angle [deg]: 40.51
+h-tail taper ratio [-]: 0.2644
+h-tail tip [m]: 1.97
+maximum take-off mass [kg]: 137793.60253294272
+operative empty mass [kg]: 60801.46
+payload mass [kg]: 9000.0
+tail area [m2]: 49.34
+tail aspect ratio [-]: 0.7
+tail mean aerodynamic chord [m]: 9.36
+tail root [m]: 13.32
+tail start point [%]: 0.76
+tail sweep angle [deg]: 61.86
+tail taper ratio [-]: 0.2595
+tail tip [m]: 3.46
+tailspan [m]: 5.88
+wing area [m2]: 290.3879807566098
+wing aspect ratio [-]: 1.92
+wing mean aerodynamic chord [m]: 14.95
+wing root [m]: 22.19
+wing start point [%]: 0.31
+wing sweep angle [deg]: 58.88
+wing taper ratio [-]: 0.1087
+wing tip [m]: 2.41
+wing_area_[m2]: 290.3879807566098
+wingspan [m]: 23.61

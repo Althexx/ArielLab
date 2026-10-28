@@ -1,0 +1,27 @@
+Drag coefficient (2nd segment): 0.04445996796172487
+Drag coefficient (sub climb): 0.05111261077547447
+Drag coefficient (sub cruise): 0.050368154379609065
+Drag coefficient (sup climb): 0.022643436942424447
+Drag coefficient (sup cruise): 0.029278856649253972
+Lift coefficient (2nd segment): 0.40257660372463333
+Lift coefficient (sub climb): 0.4370950649892902
+Lift coefficient (sub cruise): 0.4307853819172869
+Lift coefficient (sup climb): 0.2337937409999574
+Lift coefficient (sup cruise): 0.20183005712628063
+Parasite drag coefficient (2nd segment): 0.010129943360846626
+Parasite drag coefficient (sub climb): 0.010643015838779364
+Parasite drag coefficient (sub cruise): 0.011058523416200085
+Parasite drag coefficient (sup climb): 0.013331223635068144
+Parasite drag coefficient (sup cruise): 0.012668243956596714
+T/W (sub cruise): 0.4
+T/W (sup climb): 0.32
+T/W (sup cruise): 0.35
+end gross mass [kg] (sub cruise): 118738.69327262267
+end gross mass [kg] (sup climb): 102435.87068629157
+end gross mass [kg] (sup cruise): 71711.29825234678
+fuel fraction (sub cruise): 0.9162759893011756
+fuel fraction (sup climb): 0.8627
+fuel fraction (sup cruise): 0.700060416062276
+fuel mass [kg](sub cruise): 10849.656372097554
+fuel mass [kg](sup climb): 16302.822586331089
+fuel mass [kg](sup cruise): 30724.572433944795

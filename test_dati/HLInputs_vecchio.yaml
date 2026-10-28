@@ -1,0 +1,52 @@
+# RUN CONFIG
+H_Tail: '1' # ['0'] Absent, ['1'] Present
+Canard: '1' # ['0'] Absent, ['1'] Present
+MTOW_Tolerance: 100 # [kg] value check at the end of any iterations
+# ----------------------------------------------------------------------
+# High-Level Requirements
+# ----------------------------------------------------------------------
+payload:
+  passenger_number [-] : 100    # [\], Passenger number
+  passenger_weight [kg] : 90    # [kg], Weight per passenger including luggage
+
+crew:
+  crew_number [-]: 5            # [\], Crew number
+  crew_weight [kg]: 100         # [kg], Weight per Crew
+
+flight_expected_performances:
+  mach [-] : 1.8                  # [\], Cruise mach number
+  range [km] : 6000              # [km], Range # at maximum payload
+  sfc [(kg/s)/N] : 0.00003       # [(Kg/s)/N], Specific Fuel Consuption Supersonic Cruise (Layer 1)
+  gradient_sub_climb [%]: 0.03
+  gradient_sup_climb [%]: 0.03
+
+vehicle_characteristics:
+  number_engines [-] : 4          # [\], Number of engines
+
+operational_scenario_characteristics:
+  max_take_off_field_length [m] : 2500  # [m], Maximum Take-Off field length
+  max_landing_field_length [m] : 4000   # [m], Maximum Landing field length
+  take_off_mach [-]: 0.35
+  take_off_altitude [m]: 0 # [m], Airport elevation
+  take_off_alfa [deg]: 20
+  2nd_segment_mach [-]: 0.4
+  2nd_segment_alfa [deg]: 15
+  subsonic_climb_mach [-]: 0.6
+  subsonic_climb_altitude [m]: 6500 # [m], Sizing altitude for Subsonic Climb Thrust
+  subsonic_climb_alfa [deg]: 10
+  subsonic_climb_throttle [%]: 0.9
+  subsonic_cruise_mach [-]: 0.8
+  subsonic_cruise_altitude [m]: 11000 # [m]
+  subsonic_cruise_alfa [deg]: 5
+  subsonic_cruise_throttle [%]: 0.8
+  subsonic_cruise_distance [%]: 0.10 # Percentage respect to the Mission Range [5%-10%]
+  supersonic_climb_mach [-]: 0.95
+  supersonic_climb_altitude [m]: 15000 # [m], Sizing altitude for Supersonic Climb Thrust
+  supersonic_climb_alfa [deg]: 3
+  supersonic_climb_throttle [%]: 0.9
+  supersonic_cruise_alfa [deg]: 1
+  supersonic_cruise_altitude [m]: 18000
+  supersonic_cruise_throttle [%]: 1
+  landing_mach [-]: 0.3
+  landing_altitude [m]: 0 # [m], Airport elevation
+  landing_alfa [deg]: 3

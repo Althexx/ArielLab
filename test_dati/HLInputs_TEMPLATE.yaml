@@ -1,0 +1,56 @@
+# ARIEL-SST - input file TEMPLATE
+# Rename this file to HLInputs.yaml and put it in the 'inputs' folder next to the program.
+# Fill every value after the colon. Ranges in [ ] are checked by the program:
+# a value out of range, or mission points that do not agree, stop the run with a message.
+# Climb altitudes and Mach numbers are NOT inputs: the program computes them.
+
+# RUN CONFIG
+H_Tail:          # ['0'] Absent, ['1'] Present
+Canard:          # ['0'] Absent, ['1'] Present
+MTOW_Tolerance:  # [kg] value check at the end of any iterations
+# ----------------------------------------------------------------------
+# High-Level Requirements
+# ----------------------------------------------------------------------
+payload:
+  passenger_number [-] :         # [\], Passenger number
+  passenger_weight [kg] :        # [kg], Weight per passenger including luggage
+
+crew:
+  crew_number [-]:               # [\], Crew number
+  crew_weight [kg]:              # [kg], Weight per Crew
+
+flight_expected_performances:
+  mach [-] :                     # [\], Cruise (design) Mach number [1.50 to 2.50]
+  range [km] :                   # [km], Range at maximum payload
+  sfc [(kg/s)/N] :               # [(Kg/s)/N], Specific Fuel Consumption Supersonic Cruise (Layer 1)
+  gradient_sub_climb [%]:        # Climb gradient, subsonic climb
+  gradient_sup_climb [%]:        # Climb gradient, supersonic climb
+
+vehicle_characteristics:
+  number_engines [-] :           # [\], Number of engines
+  take_off_cl_max [-]:           # [\], Maximum lift coefficient at take-off (positive number)
+  landing_cl_max [-]:            # [\], Maximum lift coefficient at landing (positive number)
+
+operational_scenario_characteristics:
+  max_take_off_field_length [m] :  # [m], Maximum Take-Off field length
+  max_landing_field_length [m] :   # [m], Maximum Landing field length
+  take_off_mach [-]:               # [0.30 to 0.50]
+  take_off_altitude [m]:           # [m], Airport elevation [-400 to 4500]
+  take_off_alfa [deg]:
+  2nd_segment_mach [-]:            # [0.30 to 0.50], not lower than take_off_mach
+  2nd_segment_alfa [deg]:
+  subsonic_climb_alfa [deg]:
+  subsonic_climb_throttle [%]:
+  subsonic_cruise_mach [-]:        # [0.50 to 0.95], not lower than 2nd_segment_mach
+  subsonic_cruise_altitude [m]:    # [m] [6000 to 13500], above both airports
+  subsonic_cruise_alfa [deg]:
+  subsonic_cruise_throttle [%]:
+  subsonic_cruise_distance [%]:    # Percentage respect to the Mission Range [5%-10%]
+  supersonic_climb_alfa [deg]:
+  supersonic_climb_throttle [%]:
+  supersonic_cruise_alfa [deg]:
+  supersonic_cruise_altitude [m]:  # [m] [13000 to 21000], above the subsonic cruise
+  supersonic_cruise_throttle [%]:
+  landing_mach [-]:                # [0.30 to 0.40], below subsonic_cruise_mach
+  landing_altitude [m]:            # [m], Airport elevation [-400 to 4500]
+  landing_alfa [deg]:

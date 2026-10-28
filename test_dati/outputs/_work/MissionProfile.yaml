@@ -1,0 +1,32 @@
+Take-off:
+  distance [km]: 2.5
+  velocity [m/s]: 119.1
+  time [s]: 20.99
+2nd segment:
+  distance [km]: 3.33
+  velocity [m/s]: 135.96
+  time [s]: 24.51
+Subsonic Climb:
+  distance [km]: 362.06
+  velocity [m/s]: 171.25
+  time [s]: 2114.26
+Subsonic Cruise:
+  distance [km]: 600.0
+  velocity [m/s]: 236.12
+  time [s]: 2541.05
+Supersonic Climb:
+  distance [km]: 233.26
+  velocity [m/s]: 403.66
+  time [s]: 577.88
+Supersonic Cruise:
+  distance [km]: 4436.15
+  velocity [m/s]: 531.13
+  time [s]: 8352.36
+Descent:
+  distance [km]: 358.7
+  velocity [m/s]: 102.03
+  time [s]: 3515.62
+Landing:
+  distance [km]: 4.0
+  velocity [m/s]: 102.09
+  time [s]: 39.18
