@@ -1,4 +1,5 @@
 """Dashboard locale per ARIEL-SST: cambia gli input, lancia ARIEL (opzione 2), salva e confronta le prove.
+Su una prova salvata lancia anche motore ed emissioni (opzione 3): dura molto di piu', da decine di minuti in su.
 
 Avvio: doppio clic su 'Avvia dashboard.bat' (oppure: python app.py). Si apre http://127.0.0.1:8790 nel browser.
 ARIEL resta acceso tra un calcolo e l'altro: il primo dura circa 20 s in piu' (avvio), poi 5-15 s a calcolo secondo il carico del PC.
@@ -180,9 +181,82 @@ def riepilogo(dir_out, log):
             'freccia': res.get('wing_sweep_angle_[deg]'), 'L_fus': res.get('fuselage_length_[m]')}
 
 
+# ---------------------------------------------------------------- motore ed emissioni (opzione 3)
+NX = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+# righe del foglio Segments di Engine_and_emissions.xlsx: (etichetta di ARIEL, gruppo, nome, unita', decimali)
+RIGHE_EM = [
+    ('Segment fuel, Layer 1 [kg]', 'Fase', 'Combustibile', 'kg', 0),
+    ('Segment duration, mission profile [min]', 'Fase', 'Durata', 'min', 1),
+    ('Did the requested input converge?', 'Fase', 'Regime richiesto raggiunto', '', 0),
+    ('Net thrust [kN]', 'Motore (per motore)', 'Spinta netta', 'kN', 1),
+    ('TSFC [g/(kN·s)]', 'Motore (per motore)', 'TSFC', 'g/(kN·s)', 2),
+    ('Tt4 [K]', 'Motore (per motore)', 'Tt4', 'K', 0),
+    ('T3 [K]', 'Motore (per motore)', 'T3', 'K', 0),
+    ('P3 [bar]', 'Motore (per motore)', 'P3', 'bar', 1),
+    ('Combustor FAR [-]', 'Motore (per motore)', 'FAR', '', 4),
+    ('EI NOx (equilibrium)', 'Indici di emissione', 'EI NOx, equilibrio', 'g/kg', 1),
+    ('EI NOx (P3T3)', 'Indici di emissione', 'EI NOx, P3-T3', 'g/kg', 1),
+    ('  P3T3 NOx extrapolated outside the T3 range?', 'Indici di emissione', 'P3-T3 fuori dal campo di T3', '', 0),
+    ('EI CO (P3T3)', 'Indici di emissione', 'EI CO, P3-T3', 'g/kg', 2),
+    ('EI CO2 (equilibrium)', 'Indici di emissione', 'EI CO₂', 'g/kg', 0),
+    ('EI H2O (equilibrium)', 'Indici di emissione', 'EI H₂O', 'g/kg', 0),
+    ('CO2 (equilibrium)', 'Emissioni (tutti i motori)', 'CO₂', 'kg', 0),
+    ('H2O (equilibrium)', 'Emissioni (tutti i motori)', 'H₂O', 'kg', 0),
+    ('NOx (equilibrium)', 'Emissioni (tutti i motori)', 'NOx, equilibrio', 'kg', 1),
+    ('NOx (P3T3)', 'Emissioni (tutti i motori)', 'NOx, P3-T3', 'kg', 1),
+    ('CO (P3T3)', 'Emissioni (tutti i motori)', 'CO, P3-T3', 'kg', 1)]
+
+
+def _xlsx(p, foglio):
+    """Righe di un foglio xlsx come liste di testi (celle vuote = ''), con la sola libreria standard."""
+    import xml.etree.ElementTree as ET, zipfile
+    try:
+        z = zipfile.ZipFile(p)
+        ss = [''.join(t.text or '' for t in si.iter(NX + 't')) for si in ET.fromstring(z.read('xl/sharedStrings.xml')).iter(NX + 'si')] \
+            if 'xl/sharedStrings.xml' in z.namelist() else []
+        rid = next(s.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+                   for s in ET.fromstring(z.read('xl/workbook.xml')).iter(NX + 'sheet') if s.get('name') == foglio)
+        f = next(r.get('Target') for r in ET.fromstring(z.read('xl/_rels/workbook.xml.rels')) if r.get('Id') == rid).lstrip('/')
+        righe = []
+        for r in ET.fromstring(z.read(f if f.startswith('xl/') else 'xl/' + f)).iter(NX + 'row'):
+            riga = []
+            for c in r.iter(NX + 'c'):
+                col = 0
+                for ch in re.match(r'[A-Z]+', c.get('r')).group():
+                    col = col * 26 + ord(ch) - 64
+                v, t = c.find(NX + 'v'), c.get('t')
+                x = ''.join(e.text or '' for e in c.iter(NX + 't')) if t == 'inlineStr' else \
+                    '' if v is None else ss[int(v.text)] if t == 's' else v.text
+                riga += [''] * (col - 1 - len(riga)) + [x]
+            righe.append(riga)
+        return righe
+    except (OSError, KeyError, StopIteration, ValueError, zipfile.BadZipFile, ET.ParseError):
+        return []
+
+
+def emissioni(dir_out):
+    """Tabella per fase di Engine_and_emissions.xlsx (foglio Segments); None se il file non c'e'."""
+    righe = _xlsx(os.path.join(dir_out, 'Layer1', 'Engine_and_emissions.xlsx'), 'Segments')
+    if not righe:
+        return None
+    fasi, per = righe[0][1:], {}
+    for r in righe:  # la prima volta: in fondo al foglio i 3 punti supersonici ripetono le etichette del motore
+        if r:
+            per.setdefault(r[0], r[1:])
+
+    def num(x):
+        try:
+            return float(x)
+        except ValueError:
+            return x or None
+    return {'fasi': fasi, 'righe': [{'gruppo': g, 'nome': n, 'u': u, 'd': d,
+                                     'v': [num(x) for x in (per[k] + [''] * len(fasi))[:len(fasi)]]}
+                                    for k, g, n, u, d in RIGHE_EM if k in per]}
+
+
 # ---------------------------------------------------------------- ARIEL acceso
 class Ariel:
-    """ARIEL-SST con stdin/stdout rediretti: resta acceso, ogni calcolo = '2' e attesa del menu."""
+    """ARIEL-SST con stdin/stdout rediretti: resta acceso, ogni calcolo = '2' (o '3') e attesa del menu."""
     def __init__(self, cmd, cwd):
         self.cmd, self.cwd, self.proc, self.buf, self.lock = cmd, cwd, None, bytearray(), threading.Lock()
 
@@ -219,7 +293,7 @@ class Ariel:
             if self.proc is None or self.proc.poll() is not None:
                 self.avvia()
 
-    def calcola(self, sec=180):
+    def calcola(self, sec=180, opzione=b'2'):
         with self.lock:
             if self.proc is None or self.proc.poll() is not None or not self._attendi(1, 120):
                 self.chiudi()
@@ -227,7 +301,7 @@ class Ariel:
                     log = self.buf.decode('utf-8', 'replace'); self.chiudi()
                     return log + '\n[dashboard] Error: ARIEL non si e\' avviato'
             n, da = self.buf.count(PROMPT), len(self.buf)
-            self.proc.stdin.write(b'2\n'); self.proc.stdin.flush()
+            self.proc.stdin.write(opzione + b'\n'); self.proc.stdin.flush()
             ok = self._attendi(n + 1, sec)
             log = self.buf[da:].decode('utf-8', 'replace')
             if not ok:
@@ -249,6 +323,7 @@ class Lab:
     def __init__(self, template, ariel, dir_lavoro, dir_prove, valori, note=()):
         self.template, self.sch, self.ariel = template, schema(template), ariel
         self.dir_lavoro, self.dir_prove, self.valori0, self.note = dir_lavoro, dir_prove, valori, list(note)
+        self.job = None  # {'id', 'inizio'} della prova di cui ARIEL sta calcolando motore ed emissioni
         os.makedirs(dir_prove, exist_ok=True)
 
     def _p(self, pid):
@@ -258,6 +333,8 @@ class Lab:
 
     def calcola(self, valori, nome, nota):
         err = controlla(valori, self.sch)
+        if self.job:  # l'opzione 3 usa gli input e gli output della cartella di lavoro
+            err = ['ARIEL sta calcolando motore ed emissioni: aspetta che finisca.']
         if err:
             return {'id': None, 'nome': nome, 'valori': valori, 'riepilogo': {'ok': False, 'errore': '\n'.join(err)}}
         testo = scrivi_hl(self.template, valori)
@@ -308,6 +385,50 @@ class Lab:
     def cancella(self, pid):
         shutil.rmtree(self._p(pid))
 
+    def emissioni(self, pid, sec=6 * 3600):
+        """Avvia in un thread l'opzione 3 di ARIEL (motore ed emissioni) sul velivolo della prova."""
+        if self.job:
+            raise ValueError('ARIEL sta gia\' calcolando motore ed emissioni')
+        if not self.prova(pid)['riepilogo'].get('ok'):
+            raise ValueError('la prova non converge: non c\'e\' un velivolo su cui progettare il motore')
+        self.job = {'id': pid, 'inizio': time.time()}
+        t = threading.Thread(target=self._emissioni, args=(pid, sec), daemon=True)
+        t.start()
+        return t
+
+    def _emissioni(self, pid, sec):
+        try:
+            d, out = self._p(pid), os.path.join(self.dir_lavoro, 'outputs')
+            # l'opzione 3 parte dall'ultimo velivolo calcolato: si rimette in lavoro/ quello della prova
+            shutil.copy2(os.path.join(d, 'HLInputs.yaml'), os.path.join(self.dir_lavoro, 'inputs', 'HLInputs.yaml'))
+            if os.path.isdir(out):
+                shutil.rmtree(out)
+            shutil.copytree(os.path.join(d, 'outputs'), out)
+            for vecchio in ('Engine_and_emissions.xlsx', 'CRN_emissions'):  # risultati di un giro precedente
+                f = os.path.join(out, 'Layer1', vecchio)
+                if os.path.isdir(f):
+                    shutil.rmtree(f)
+                elif os.path.isfile(f):
+                    os.remove(f)
+            t0 = time.time()
+            log = self.ariel.calcola(sec, b'3')
+            open(os.path.join(d, 'log_emissioni.txt'), 'w', encoding='utf-8').write(log)
+            e = emissioni(out)
+            if e:
+                shutil.copytree(out, os.path.join(d, 'outputs'), dirs_exist_ok=True)
+                e.update(ok=True)
+            else:
+                err = [r for r in log.splitlines() if 'error' in r.lower()]
+                e = {'ok': False, 'errore': '\n'.join(err[:10]) or 'ARIEL non ha scritto Engine_and_emissions.xlsx'}
+            e.update(secondi=round(time.time() - t0), data=datetime.now().strftime('%d/%m/%Y %H:%M'))
+            p = self.prova(pid)  # riletta: nome e nota possono essere cambiati durante il calcolo
+            p['emissioni'] = e
+            json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        except (OSError, KeyError, ValueError):
+            pass  # prova cancellata durante il calcolo
+        finally:
+            self.job = None
+
     def esporta(self, pid):
         """Una prova nel formato che legge la Control Room (formato 1)."""
         p, d = self.prova(pid), self._p(pid)
@@ -324,7 +445,7 @@ class Lab:
     def stato(self):
         pr = self.prove()
         return {'schema': self.sch, 'valori': pr[0]['valori'] if pr else self.valori0, 'note': self.note,
-                'prove': pr, 'ariel_pronto': self.ariel.pronto()}
+                'prove': pr, 'ariel_pronto': self.ariel.pronto(), 'job': self.job}
 
     def csv(self, ids):
         pr = [self.prova(i) for i in ids]
@@ -391,8 +512,12 @@ def server(lab, porta):
                 if p == '/api/calcola':
                     d = self._json()
                     return self._invia(lab.calcola(d['valori'], d.get('nome', ''), d.get('nota', '')))
-                m = re.fullmatch(r'/api/prova/([\w.\-]+)(/cancella)?', p)
+                m = re.fullmatch(r'/api/prova/([\w.\-]+)(/cancella|/emissioni)?', p)
+                if m and m.group(2) == '/emissioni':
+                    lab.emissioni(m.group(1)); return self._invia({'ok': True})
                 if m and m.group(2):
+                    if lab.job and lab.job['id'] == m.group(1):
+                        raise ValueError('ARIEL sta calcolando motore ed emissioni di questa prova')
                     lab.cancella(m.group(1)); return self._invia({'ok': True})
                 if m:
                     return self._invia(lab.aggiorna(m.group(1), self._json()))

@@ -14,7 +14,7 @@ header{display:flex;align-items:center;gap:20px;padding:0 20px;height:54px;borde
 header h1{font-size:17px;margin:0;letter-spacing:.2px}
 header h1 small{font-weight:400;color:var(--mut);font-size:13px;margin-left:6px}
 nav{display:flex;gap:4px}
-nav button{border:0;background:none;color:var(--mut);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+nav button{white-space:nowrap;border:0;background:none;color:var(--mut);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500}
 nav button:hover{color:var(--fg);background:var(--soft)}
 nav button.on{background:var(--accs);color:var(--acc);font-weight:650}
 .pill{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--mut)}
@@ -110,12 +110,12 @@ svg text{fill:var(--mut);font-size:11px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .hid{display:none!important}
 .empty{padding:30px;text-align:center;color:var(--mut)}
-@media (max-width:900px){.wrap{grid-template-columns:1fr}aside{position:static;height:auto}}
+@media (max-width:900px){header{height:auto;flex-wrap:wrap;gap:6px 16px;padding:8px 16px}nav{flex-wrap:wrap}.wrap{grid-template-columns:1fr}aside{position:static;height:auto}}
 </style>
 </head>
 <body>
 <header><h1>ARIEL Lab<small>dimensionamento con ARIEL-SST</small></h1>
-  <nav id="tabs"><button data-t="prova" class="on">Prova</button><button data-t="conf">Confronto</button><button data-t="serie">Serie</button></nav>
+  <nav id="tabs"><button data-t="prova" class="on">Prova</button><button data-t="conf">Confronto</button><button data-t="serie">Serie</button><button data-t="em">Motore ed emissioni</button></nav>
   <span class="pill" id="st"><i></i><span></span></span></header>
 <div class="wrap">
 <aside>
@@ -140,6 +140,7 @@ svg text{fill:var(--mut);font-size:11px}
     <div class="box" id="barbox"><h2>Spinta richiesta da ogni vincolo</h2><p class="note" style="margin:-6px 0 10px">T/W richiesto da ciascuna fase al carico alare di progetto. Il vincolo più alto fissa la spinta (in arancione).</p><div class="bars" id="bars"></div></div>
     <div class="imgs" id="imgs"></div>
   </section>
+  <section id="t-em" class="hid"><div class="box" id="embox"></div></section>
   <section id="t-conf" class="hid">
     <div class="box"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Prove salvate</h2><button class="btn sm" id="csv">Esporta CSV delle prove spuntate</button></div>
       <p class="note" style="margin:0 0 8px">Clic sul nome per aprire la prova. <span class="star">★</span> = prova di riferimento: gli input diversi da lei sono evidenziati in giallo a sinistra, e i risultati mostrano la differenza da lei.</p>
@@ -192,10 +193,10 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const rif=()=>S.prove.find(p=>p.rif);
 const sc=(c,x)=>c.scelte?(String(x)==='1'?'presente':'assente'):fv(x);
 async function api(u,b){const r=await fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{});return r.json()}
-function stato(ok){$('#st').classList.toggle('ok',ok);$('#st span').textContent=ok?'ARIEL pronto · un calcolo richiede 5–15 s':'ARIEL si sta avviando (circa 20 s)…'}
+function stato(ok,job){$('#st').classList.toggle('ok',ok&&!job);$('#st span').textContent=job?`ARIEL calcola motore ed emissioni da ${Math.round((Date.now()/1000-job.inizio)/60)} min…`:ok?'ARIEL pronto · un calcolo richiede 5–15 s':'ARIEL si sta avviando (circa 20 s)…'}
 async function carica(sel){S=await api('/api/stato');if(!Object.keys(V).length)V={...S.valori};if(sel!==undefined)SEL=sel;else if(!SEL&&S.prove.length)SEL=S.prove[0].id;
   $('#conv').innerHTML=S.note.length?'Input del pacchetto convertiti al formato della release del 27/10: '+S.note.map(esc).join('; ')+'.':'';
-  stato(S.ariel_pronto);campi();prova();lista();serieSel()}
+  stato(S.ariel_pronto,S.job);campi();prova();lista();serieSel();$('#sgo').disabled=!!S.job}
 function errore(c,x){if(x===''||x==null||(c.scelte?false:isNaN(x)))return'manca il valore';if(c.scelte)return'';if(c.min!=null&&(x<c.min||x>c.max))return`valore ammesso da ${fv(c.min)} a ${fv(c.max)}`;if(c.positivo&&x<=0)return'deve essere positivo';if(c.intero&&x!=Math.round(x))return'deve essere un numero intero';return''}
 const diverso=(c,R)=>R&&String(R.valori[c.id])!==String(V[c.id]);
 function campi(){const R=rif(),per={};S.schema.forEach(c=>{const g=info(c)[0];(per[g]=per[g]||[]).push(c)});
@@ -207,7 +208,7 @@ function campi(){const R=rif(),per={};S.schema.forEach(c=>{const g=info(c)[0];(p
     return `<details class="g" open><summary>${t}${n?`<span class="n" title="input diversi dal riferimento">${n}</span>`:''}</summary><div class="gb">${cs.map(c=>{const x=V[c.id],r=R?R.valori[c.id]:undefined,ch=diverso(c,R),e=errore(c,x),[,nm,hint]=info(c),u=un(c);
     const inp=c.scelte?`<select data-id="${esc(c.id)}">${c.scelte.map(s=>`<option value="${s}" ${String(x)===s?'selected':''}>${s==='1'?'presente':'assente'}</option>`).join('')}</select>`:`<input type="number" step="any" data-id="${esc(c.id)}" value="${x??''}">`;
     return `<div class="f ${ch?'chg':''} ${e?'err':''}" title="Chiave ARIEL: ${esc(c.chiave)}${c.commento?' — '+esc(c.commento):''}"><label>${nm}${hint?`<small>${esc(hint)}</small>`:''}</label><div class="inp">${inp}${u?`<span class="u">${esc(u)}</span>`:''}</div>${ch?`<span class="ref">★ nel riferimento: ${esc(sc(c,r))}<button data-reset="${esc(c.id)}">riporta</button></span>`:''}${e?`<span class="rng">${esc(e)}</span>`:''}</div>`}).join('')}</div></details>`}).join('')||'<p class="note" style="padding:10px">Nessun input corrisponde alla ricerca.</p>';
-  $('#calc').disabled=BUSY||S.schema.some(c=>errore(c,V[c.id]))}
+  $('#calc').disabled=BUSY||!!S.job||S.schema.some(c=>errore(c,V[c.id]))}
 $('#campi').addEventListener('change',e=>{const t=e.target,id=t.dataset.id;if(!id)return;const c=S.schema.find(c=>c.id===id);V[id]=c.scelte?t.value:(t.value===''?'':Number(t.value));campi()});
 $('#campi').addEventListener('click',e=>{const id=e.target.dataset.reset;if(id){V[id]=rif().valori[id];campi()}});
 $('#rifbox').addEventListener('click',e=>{if(e.target.id==='rall'){V={...rif().valori};campi()}});
@@ -217,7 +218,7 @@ async function calcola(valori,nome,nota){BUSY=true;campi();const t0=Date.now(),t
 $('#calc').onclick=async()=>{const p=await calcola(V,$('#nome').value||'prova',$('#nota').value);if(p.id){$('#nome').value='';$('#nota').value=''}await carica(p.id||SEL);if(!p.id){$('#perr').classList.remove('hid');$('#perr').textContent=p.riepilogo.errore}tab('prova')};
 function delta(k,x,y,d,div){if(x==null||y==null)return'&nbsp;';const dd=x-y;if(dd===0)return'uguale al riferimento';
   return `<span class="${dd>0?'up':'dn'}">${dd>0?'+':''}${fmt(dd/(div||1),d)}${y?` (${dd/y*100>0?'+':''}${fmt(dd/y*100,1)} %)`:''}</span>`}
-function prova(){const p=S.prove.find(p=>p.id===SEL),R=rif();$('#perr').classList.add('hid');
+function prova(){const p=S.prove.find(p=>p.id===SEL),R=rif();$('#perr').classList.add('hid');emBox(p);
   if(!p){$('#ptitle').textContent='Nessuna prova: imposta gli input e premi Calcola.';$('#pdata').textContent=$('#pvs').textContent='';$('#kpis').innerHTML=$('#bars').innerHTML=$('#imgs').innerHTML='';$('#barbox').classList.add('hid');return}
   const r=p.riepilogo,cmp=R&&R.id!==p.id&&R.riepilogo.ok;$('#barbox').classList.remove('hid');
   $('#ptitle').innerHTML=(p.rif?'<span class="star">★</span> ':'')+esc(p.nome);$('#pdata').textContent=`${p.data}${p.nota?' · '+p.nota:''}${r.secondi?' · calcolata in '+r.secondi+' s':''}`;
@@ -226,6 +227,31 @@ function prova(){const p=S.prove.find(p=>p.id===SEL),R=rif();$('#perr').classLis
   $('#kpis').innerHTML=KG.map(([g,ks])=>`<div class="kgrp"><h3>${g}</h3><div class="kpis">${ks.map(([k,l,u,d,div])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${fmt(r[k]==null?null:r[k]/(div||1),d)}${u?`<small>${u}</small>`:''}</div><div class="d">${cmp?delta(k,r[k],R.riepilogo[k],d,div):'&nbsp;'}</div></div>`).join('')}${g==='Ala e spinta'?`<div class="kpi"><div class="l">Vincolo che fissa la spinta</div><div class="v" style="font-size:16px">${esc(tv(r.attivo))}</div></div>`:''}</div></div>`).join('');
   const vs=r.vincoli||{},mx=Math.max(...Object.values(vs),.01);$('#bars').innerHTML=Object.entries(vs).map(([k,x])=>`<div class="${x===r.TW?'act':''}"><span>${esc(tv(k))}</span><i style="width:${x/mx*100}%"></i><b>${fmt(x,2)}</b></div>`).join('')||'<span class="note">Dati dei vincoli non disponibili.</span>';
   $('#imgs').innerHTML=IMG.map(([f,t])=>`<figure><img src="/prove/${encodeURIComponent(p.id)}/outputs/${f.split('/').map(encodeURIComponent).join('/')}" alt="${t}"><figcaption>${t}</figcaption></figure>`).join('')}
+// motore ed emissioni (opzione 3 di ARIEL): tabella per fase del foglio Segments di Engine_and_emissions.xlsx
+const FASI={'Take-off':'Decollo','2nd segment (climb-out)':'2° segmento','Subsonic climb':'Salita subsonica','Subsonic cruise':'Crociera subsonica','Supersonic climb and acceleration':'Salita e accelerazione supersonica','Supersonic cruise':'Crociera supersonica','Descent':'Discesa','Approach':'Avvicinamento','Landing and taxi-in (idle)':'Atterraggio e rullaggio','Mission total':'Totale missione'};
+const EMK=[['Combustibile','Combustibile','t',1,1000],['CO₂','CO₂','t',1,1000],['NOx, equilibrio','NOx, equilibrio','kg',0],['NOx, P3-T3','NOx, P3-T3','kg',0],['CO, P3-T3','CO, P3-T3','kg',1]];
+function emBox(p){const b=$('#embox'),ok=S.prove.filter(q=>q.riepilogo.ok);
+  const scegli=`<div class="row" style="margin-bottom:12px"><span class="note">Velivolo della prova</span><select id="emsel" style="max-width:420px">${p&&!p.riepilogo.ok?`<option selected>${esc(p.nome)} (non converge)</option>`:''}${ok.map(q=>`<option value="${esc(q.id)}" ${p&&q.id===p.id?'selected':''}>${q.rif?'★ ':''}${esc(q.nome)} · ${esc(q.data)}${q.emissioni&&q.emissioni.ok?' · emissioni calcolate':''}</option>`).join('')}</select></div>`;
+  if(!p||!p.riepilogo.ok){b.innerHTML=`<h2>Motore ed emissioni</h2>${ok.length?scegli+'<p class="note">Scegli una prova che converge: il motore si progetta sul suo velivolo.</p>':'<p class="note">Nessuna prova converge: calcola prima un velivolo nella colonna di sinistra.</p>'}`;return}
+  const J=S.job,e=p.emissioni,mio=J&&J.id===p.id;
+  let h=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Motore ed emissioni</h2><button class="btn ${e?'':'pri'}" id="emgo" ${J?'disabled':''}>${e?'Ricalcola motore ed emissioni':'Calcola motore ed emissioni'}</button></div>`+scegli;
+  if(mio)h+=`<p class="note">ARIEL sta progettando il motore su questo velivolo e calcolando le emissioni (opzione 3 del menu), dalle ${new Date(J.inizio*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}. Dura da decine di minuti a più di un'ora. Non chiudere la finestra nera della dashboard e non sospendere il PC.</p>`;
+  else if(J)h+='<p class="note">ARIEL sta calcolando motore ed emissioni di un\'altra prova: aspetta che finisca.</p>';
+  if(!e&&!mio)h+='<p class="note">ARIEL progetta il motore su questo velivolo e calcola combustibile, stato della camera di combustione, indici di emissione e kg emessi in ogni fase della missione (opzione 3 del menu). Dura da decine di minuti a più di un\'ora; nel frattempo non si possono fare altri calcoli.</p>';
+  if(e&&!e.ok)h+=`<div class="box errbox">ARIEL si è fermato (${esc(e.data)}):\n${esc(e.errore)}</div>`;
+  if(e&&e.ok){const tot=n=>{const r=e.righe.find(r=>r.nome===n);return r?r.v[r.v.length-1]:null};
+    h+=`<p class="note" style="margin-top:0">Calcolati il ${esc(e.data)} in ${Math.round(e.secondi/60)} min. Equilibrio chimico = limite superiore degli NOx; P3-T3 = correlazione. Valori per motore nel gruppo Motore, per tutti i motori nelle Emissioni.</p>
+    <div class="kpis" style="margin-bottom:14px">${EMK.map(([n,l,u,d,div])=>{const x=tot(n);return `<div class="kpi"><div class="l">${l}, missione</div><div class="v">${fmt(x==null?null:x/(div||1),d)}<small>${u}</small></div></div>`}).join('')}</div>
+    <table><tr><th></th>${e.fasi.map(f=>`<th style="white-space:normal;min-width:70px">${esc(FASI[f]||f)}</th>`).join('')}</tr>`;
+    let g='';for(const r of e.righe){if(r.gruppo!==g){g=r.gruppo;h+=`<tr><th colspan="${e.fasi.length+1}" style="text-align:left">${esc(g)}</th></tr>`}
+      const brutto=r.nome.startsWith('P3-T3 fuori')?'Yes':'No',sn=x=>`<span style="${x===brutto?'color:var(--warn);font-weight:650':''}">${x==='Yes'?'sì':'no'}</span>`;
+      h+=`<tr><td>${esc(r.nome)}${r.u?' ['+esc(r.u)+']':''}</td>${r.v.map((x,i)=>`<td style="${i===r.v.length-1?'font-weight:650':''}">${x==='Yes'||x==='No'?sn(x):fmt(x,r.d)}</td>`).join('')}</tr>`}
+    h+='</table><p class="note">File completo: outputs/Layer1/Engine_and_emissions.xlsx nella cartella della prova (fogli Segments, Engine, Notes).</p>'}
+  b.innerHTML=h}
+$('#embox').addEventListener('change',e=>{if(e.target.id==='emsel'&&e.target.value){SEL=e.target.value;prova()}});
+$('#embox').addEventListener('click',async e=>{if(e.target.id!=='emgo'||!SEL)return;
+  if(!confirm('Calcolare motore ed emissioni di questa prova? Dura da decine di minuti a più di un\'ora e nel frattempo ARIEL non fa altri calcoli.'))return;
+  const r=await api('/api/prova/'+encodeURIComponent(SEL)+'/emissioni',{});if(r.errore)alert(r.errore);carica()});
 document.addEventListener('click',e=>{if(e.target.matches('.imgs img')){const d=document.createElement('div');d.className='lb';d.innerHTML=`<img src="${e.target.src}">`;d.onclick=()=>d.remove();document.body.append(d)}});
 function lista(){if(!S.prove.length){$('#lista').innerHTML='<tr><td class="empty">Nessuna prova salvata.</td></tr>';confronto();return}
   $('#lista').innerHTML='<tr><th></th><th class="l">Prova</th><th class="l">Nota</th><th>Data</th><th>MTOM [t]</th><th>S [m²]</th><th>T/W</th><th></th></tr>'+S.prove.map(p=>{const r=p.riepilogo;
@@ -271,9 +297,9 @@ function svg(P,xl){const W=400,H=230,m={l:54,r:12,t:10,b:40},ok=P.filter(p=>p[1]
   <polyline fill="none" stroke="var(--acc)" stroke-width="2" points="${ok.map(p=>X(p[0])+','+Y(p[1])).join(' ')}"/>
   ${ok.map(p=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" fill="var(--acc)"><title>${fv(+p[0].toPrecision(6))} → ${fv(+p[1].toPrecision(5))}</title></circle>`).join('')}
   ${P.filter(p=>p[1]==null).map(p=>`<text x="${X(p[0])}" y="${H-m.b-6}" text-anchor="middle" style="fill:var(--bad);font-size:14px;font-weight:700">✕<title>non converge</title></text>`).join('')}</svg>`}
-function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));['prova','conf','serie'].forEach(x=>$('#t-'+x).classList.toggle('hid',x!==t))}
+function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));['prova','conf','serie','em'].forEach(x=>$('#t-'+x).classList.toggle('hid',x!==t))}
 $('#tabs').onclick=e=>{if(e.target.dataset.t)tab(e.target.dataset.t)};
-carica();setInterval(async()=>{if(BUSY)return;const s=await api('/api/stato');stato(s.ariel_pronto)},5000);
+carica();setInterval(async()=>{if(BUSY)return;const s=await api('/api/stato');stato(s.ariel_pronto,s.job);if(!!s.job!==!!S.job)carica()},5000);
 </script>
 </body>
 </html>

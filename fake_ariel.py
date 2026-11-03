@@ -14,10 +14,20 @@ def calcolo():
     shutil.copytree(os.path.join(ESEMPIO, 'outputs'), 'outputs')
     print('Iteration: 1\nMTOM=114206 [kg]\nFuel_f=48.98 %\nConverged in 33 iterations')
 
+def motore():
+    v = yaml.safe_load(open(os.path.join('inputs', 'HLInputs.yaml'), encoding='utf-8'))
+    if v['payload']['passenger_number [-]'] == 99:
+        print('Error: engine on-design optimisation found no feasible design')
+        return
+    shutil.copy2(os.path.join(ESEMPIO, 'Engine_and_emissions.xlsx'), os.path.join('outputs', 'Layer1'))
+    print('Engine and emissions done')
+
 while True:
     sys.stdout.write(MENU); sys.stdout.flush()
     scelta = sys.stdin.readline().strip()
     if scelta == '2':
         calcolo()
+    elif scelta == '3':
+        motore()
     elif scelta == '4' or not scelta:
         break

@@ -23,6 +23,10 @@ Serve la release di ARIEL-SST del 27/10/2026, quella del corso. **L'eseguibile n
 - Al primo avvio la dashboard copia in `lavoro\inputs` gli input di partenza da `inputs_iniziali`. Sono gli input del pacchetto del corso, non modificati, e il database statistico del team.
 - Il primo calcolo dura circa 20 s in più, perché ARIEL si avvia; poi 5–15 s per calcolo. Ogni calcolo viene salvato in `prove`.
 - Al primo avvio Windows può bloccare ARIEL-SST.exe con "Windows ha protetto il PC": clicca "Ulteriori informazioni" e poi "Esegui comunque".
+- **Motore ed emissioni.** Nella scheda "Motore ed emissioni" si sceglie una prova che converge. Il pulsante "Calcola motore ed emissioni" lancia l'opzione 3 di ARIEL sul velivolo di quella prova. ARIEL progetta il motore e calcola, fase per fase, combustibile, stato della camera di combustione, indici di emissione e kg di CO₂, H₂O, NOx e CO.
+  - Il calcolo dura da decine di minuti a più di un'ora: il motore richiede circa 15 minuti, poi c'è la rete di reattori (CRN). Nel frattempo non si possono fare altri calcoli.
+  - Non chiudere la finestra nera e non sospendere il PC.
+  - I risultati restano nella prova: `outputs\Layer1\Engine_and_emissions.xlsx`, `outputs\Layer1\CRN_emissions\` e `log_emissioni.txt`.
 
 ## Se qualcosa non va
 - **"ARIEL-SST.exe non trovato":** manca l'eseguibile in `lavoro\`.

@@ -112,6 +112,29 @@ class Riepilogo(unittest.TestCase):
         self.assertTrue(r['ok']); self.assertIsNone(r['LD_sup']); self.assertEqual(r['MTOM'], 137794)
 
 
+class Emissioni(unittest.TestCase):
+    def test_foglio_segments_vero(self):
+        d = tempfile.mkdtemp(); os.makedirs(os.path.join(d, 'Layer1'))
+        shutil.copy2(os.path.join(DATI, 'Engine_and_emissions.xlsx'), os.path.join(d, 'Layer1'))
+        e = app.emissioni(d)
+        self.assertEqual(len(e['fasi']), 10)
+        self.assertEqual((e['fasi'][0], e['fasi'][-1]), ('Take-off', 'Mission total'))
+        r = {x['nome']: x['v'] for x in e['righe']}
+        self.assertEqual(len(r), len(app.RIGHE_EM))
+        self.assertTrue(all(len(v) == 10 for v in r.values()))
+        self.assertAlmostEqual(r['Combustibile'][-1], 69618.6, places=1)
+        self.assertAlmostEqual(r['NOx, equilibrio'][-1], 2952.37, places=2)
+        self.assertAlmostEqual(r['EI NOx, P3-T3'][5], 35.98, places=2)
+        self.assertEqual(r['Regime richiesto raggiunto'][8], 'No')
+        self.assertIsNone(r['Spinta netta'][-1])  # nessun totale per le grandezze del motore
+        self.assertAlmostEqual(r['Spinta netta'][0], 175.75, places=2)  # non il blocco dei 3 punti supersonici
+        self.assertAlmostEqual(r['Tt4'][5], 1500.0, places=1)
+
+    def test_file_mancante(self):
+        self.assertIsNone(app.emissioni('/non/esiste'))
+        self.assertEqual(app._xlsx(os.path.join(DATI, 'log_ok.txt'), 'Segments'), [])
+
+
 class Lavoro(unittest.TestCase):
     """ARIEL finto acceso una volta sola, due calcoli di fila; prove salvate; server HTTP."""
     @classmethod
@@ -210,6 +233,62 @@ class Lavoro(unittest.TestCase):
                     urllib.request.urlopen(base + url)
                 self.assertEqual(c.exception.code, 404)
                 self.assertIn('errore', json.loads(c.exception.read()))
+        finally:
+            srv.shutdown()
+
+    def test_8_motore_ed_emissioni(self):
+        p = self._prova_ok()
+        self.lab.emissioni(p['id']).join(30)
+        q = self.lab.prova(p['id'])
+        self.assertTrue(q['emissioni']['ok'], q['emissioni'])
+        self.assertEqual(q['emissioni']['fasi'][-1], 'Mission total')
+        d = os.path.join(self.lab.dir_prove, p['id'])
+        self.assertTrue(os.path.isfile(os.path.join(d, 'outputs', 'Layer1', 'Engine_and_emissions.xlsx')))
+        self.assertIn('Engine and emissions done', open(os.path.join(d, 'log_emissioni.txt'), encoding='utf-8').read())
+        self.assertIsNone(self.lab.job)
+        self.assertEqual(q['valori'], p['valori'])
+
+    def test_9_emissioni_che_falliscono_e_blocchi(self):
+        v = valori_validi(); v['payload/passenger_number [-]'] = 99
+        p = self.lab.calcola(v, 'motore impossibile', '')
+        self.lab.emissioni(p['id']).join(30)
+        e = self.lab.prova(p['id'])['emissioni']
+        self.assertFalse(e['ok']); self.assertIn('no feasible design', e['errore'])
+        v = valori_validi(); v['flight_expected_performances/range [km]'] = 9500
+        with self.assertRaises(ValueError):  # nessun velivolo convergente
+            self.lab.emissioni(self.lab.calcola(v, 'non converge', '')['id'])
+        self.lab.job = {'id': p['id'], 'inizio': 0}
+        try:
+            r = self.lab.calcola(valori_validi(), 'durante', '')
+            self.assertIsNone(r['id']); self.assertIn('motore ed emissioni', r['riepilogo']['errore'])
+            with self.assertRaises(ValueError):
+                self.lab.emissioni(p['id'])
+        finally:
+            self.lab.job = None
+
+    def test_10_emissioni_server(self):
+        pid = self._prova_ok()['id']
+        srv = app.server(self.lab, 0)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = 'http://127.0.0.1:%d' % srv.server_address[1]
+        post = lambda u: urllib.request.urlopen(urllib.request.Request(base + u, b'{}', {'Content-Type': 'application/json'}))
+        try:
+            self.lab.job = {'id': pid, 'inizio': 0}
+            try:
+                for u in ('cancella', 'emissioni'):  # durante il calcolo: niente cancellazione, niente secondo calcolo
+                    with self.assertRaises(urllib.error.HTTPError) as c:
+                        post('/api/prova/%s/%s' % (pid, u))
+                    self.assertEqual(c.exception.code, 400)
+            finally:
+                self.lab.job = None
+            self.assertEqual(json.loads(post('/api/prova/%s/emissioni' % pid).read()), {'ok': True})
+            for _ in range(300):
+                if not self.lab.job:
+                    break
+                threading.Event().wait(0.1)
+            st = json.loads(urllib.request.urlopen(base + '/api/stato').read())
+            self.assertIsNone(st['job'])
+            self.assertTrue(next(p for p in st['prove'] if p['id'] == pid)['emissioni']['ok'])
         finally:
             srv.shutdown()
 
