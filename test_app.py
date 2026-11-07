@@ -209,6 +209,10 @@ class Lavoro(unittest.TestCase):
         self.assertIn('Take-off', e['mission'])
         self.assertEqual(e['log'], {'Fuel_f': 48.98, 'iterazioni': 33, 'converge': True})
         self.assertIsInstance(e['log']['converge'], bool)
+        # quello che la vista Prova mostra oltre a results.yaml: vincoli, efficienza, T/W di progetto
+        self.assertEqual(e['matching_chart']['8. T/W supersonic cruise [-]'], 0.35)
+        self.assertAlmostEqual(e['efficienza']['supersonic_cruise']['E'], 6.8934, places=3)
+        self.assertEqual(e['progetto'], {'TW': 0.4, 'attivo': 'Take-off = Subsonic cruise'})
 
     def test_6_esporta_server(self):
         pid = self._prova_ok()['id']

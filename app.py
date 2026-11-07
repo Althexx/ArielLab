@@ -440,7 +440,10 @@ class Lab:
                 'db': dbs[0] if dbs else None, 'hl': {nome(k): x for k, x in p['valori'].items()},
                 'results': _y(os.path.join(d, 'outputs', 'Layer1', 'results.yaml')),
                 'mission': _y(os.path.join(d, 'outputs', 'MissionProfile.yaml')),
-                'log': {'Fuel_f': float(f[-1]) if f else None, 'iterazioni': int(it.group(1)) if it else None, 'converge': bool(it)}}
+                'matching_chart': _y(os.path.join(d, 'outputs', '_work', 'Layer1', 'Databases', 'MatchingChartData.yaml')),
+                'efficienza': _y(os.path.join(d, 'outputs', '_work', 'Layer1', 'Databases', 'debug_eff_layer1.yaml')),
+                'progetto': {k: (p.get('riepilogo') or {}).get(k) for k in ('TW', 'attivo')},
+                'log':{'Fuel_f': float(f[-1]) if f else None, 'iterazioni': int(it.group(1)) if it else None, 'converge': bool(it)}}
 
     def stato(self):
         pr = self.prove()
