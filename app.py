@@ -193,12 +193,13 @@ class Ariel:
         self.cmd, self.cwd, self.proc, self.buf, self.lock = cmd, cwd, None, bytearray(), threading.Lock()
         self.stabile = 5  # analisi semplice: secondi in cui i file del motore non devono cambiare prima di fermare l'exe
 
-    def _leggi(self, p):
+    def _leggi(self, p, buf):
+        """Legge l'uscita di un exe nel SUO buffer: un exe vecchio non ancora morto non scrive in quello nuovo."""
         while True:
             b = p.stdout.read1(4096)
             if not b:
                 break
-            self.buf.extend(b)
+            buf.extend(b)
 
     def _attendi(self, n, sec):
         t = time.time() + sec
@@ -215,7 +216,7 @@ class Ariel:
         self.proc = subprocess.Popen(self.cmd, cwd=self.cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT, env=dict(os.environ, PYTHONUNBUFFERED='1'),
                                      creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-        threading.Thread(target=self._leggi, args=(self.proc,), daemon=True).start()
+        threading.Thread(target=self._leggi, args=(self.proc, self.buf), daemon=True).start()
         return self._attendi(1, 120)
 
     def pronto(self):
@@ -275,6 +276,8 @@ class Ariel:
             try:
                 p.stdin.write(b'4\n'); p.stdin.flush(); p.wait(10)
             except Exception:
+                if os.name == 'nt':  # l'exe e' un bootloader PyInstaller: va chiuso anche il processo figlio
+                    subprocess.run(['taskkill', '/T', '/F', '/PID', str(p.pid)], capture_output=True)
                 p.kill()
 
 
@@ -285,6 +288,8 @@ class Lab:
         self.dir_lavoro, self.dir_prove, self.valori0, self.note = dir_lavoro, dir_prove, valori, list(note)
         self.job = None  # {'id', 'inizio'} della prova di cui ARIEL sta calcolando motore ed emissioni
         self.archivio = os.path.join(dir_lavoro, 'archivio')  # risultati dell'opzione 3 per impronta degli ingressi
+        self.lock_lavoro = threading.RLock()  # chi scrive in lavoro/ (opzione 2 o 3) lo fa da solo
+        self._lock_job = threading.Lock()  # controllo e assegnazione di job in un passo solo
         os.makedirs(dir_prove, exist_ok=True)
 
     def _p(self, pid):
@@ -299,11 +304,19 @@ class Lab:
         if err:
             return {'id': None, 'nome': nome, 'valori': valori, 'riepilogo': {'ok': False, 'errore': '\n'.join(err)}}
         testo = scrivi_hl(self.template, valori)
-        open(os.path.join(self.dir_lavoro, 'inputs', 'HLInputs.yaml'), 'w', encoding='utf-8').write(testo)
-        t0 = time.time()
-        log = self.ariel.calcola()
-        out = os.path.join(self.dir_lavoro, 'outputs')
-        r = riepilogo(out, log)
+        with self.lock_lavoro:
+            open(os.path.join(self.dir_lavoro, 'inputs', 'HLInputs.yaml'), 'w', encoding='utf-8').write(testo)
+            t0 = time.time()
+            log = self.ariel.calcola()
+            out = os.path.join(self.dir_lavoro, 'outputs')
+            r = riepilogo(out, log)
+            db = self._db()
+            db_sha = motore.sha(db) if db else None
+            ris = os.path.join(self.dir_lavoro, 'ris_%d' % threading.get_ident())  # copia fatta sotto il lock
+            if os.path.isdir(ris):
+                shutil.rmtree(ris)
+            if r['ok']:
+                shutil.copytree(out, ris)
         r['secondi'] = round(time.time() - t0, 1)
         base = '%s_%s' % (datetime.now().strftime('%Y-%m-%d_%H%M%S'), re.sub(r'[^\w\-]+', '-', nome or 'prova').strip('-')[:40])
         pid, k = base, 2
@@ -313,10 +326,10 @@ class Lab:
         open(os.path.join(d, 'HLInputs.yaml'), 'w', encoding='utf-8').write(testo)
         open(os.path.join(d, 'log.txt'), 'w', encoding='utf-8').write(log)
         if r['ok']:
-            shutil.copytree(out, os.path.join(d, 'outputs'))
+            shutil.move(ris, os.path.join(d, 'outputs'))
         rif = r['ok'] and not any(p['rif'] for p in self.prove())
         p = {'id': pid, 'nome': nome or 'prova', 'nota': nota or '', 'data': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-             'ts': time.time(), 'rif': rif, 'valori': valori, 'riepilogo': r}
+             'ts': time.time(), 'rif': rif, 'valori': valori, 'riepilogo': r, 'db_sha': db_sha}
         json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         return p
 
@@ -346,10 +359,14 @@ class Lab:
     def cancella(self, pid):
         shutil.rmtree(self._p(pid))
 
+    def _db(self):
+        return next((os.path.join(self.dir_lavoro, 'inputs', x) for x in sorted(os.listdir(os.path.join(self.dir_lavoro, 'inputs')))
+                     if x.lower().endswith('.xlsx')), None)
+
     def impronta(self, pid):
-        db = next((os.path.join(self.dir_lavoro, 'inputs', x) for x in sorted(os.listdir(os.path.join(self.dir_lavoro, 'inputs')))
-                   if x.lower().endswith('.xlsx')), None)
-        return motore.impronta(self.prova(pid)['valori'], db, self.ariel.cmd[0])
+        """Impronta con il database con cui la prova e' stata calcolata (db_sha), non con quello di oggi."""
+        p = self.prova(pid)
+        return motore.impronta(p['valori'], p.get('db_sha') or motore.sha(self._db()), self.ariel.cmd[0])
 
     def _salva_archivio(self, pid, e):
         """Copia risultati e log dell'opzione 3 della prova nell'archivio, sotto la sua impronta."""
@@ -390,13 +407,14 @@ class Lab:
         Se lo stesso calcolo e' gia' nell'archivio lo riusa e restituisce None (nessun thread)."""
         if tipo not in ('semplice', 'crn'):
             raise ValueError('tipo di calcolo sconosciuto: %s' % tipo)
-        if self.job:
-            raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
-        if not self.prova(pid)['riepilogo'].get('ok'):
-            raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
-        if self.dal_archivio(pid, tipo):
-            return None
-        self.job = {'id': pid, 'inizio': time.time(), 'tipo': tipo}
+        with self._lock_job:
+            if self.job:
+                raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
+            if not self.prova(pid)['riepilogo'].get('ok'):
+                raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
+            if self.dal_archivio(pid, tipo):
+                return None
+            self.job = {'id': pid, 'inizio': time.time(), 'tipo': tipo}
         t = threading.Thread(target=self._emissioni, args=(pid, tipo, sec), daemon=True)
         t.start()
         return t
@@ -404,13 +422,23 @@ class Lab:
     def _emissioni(self, pid, tipo, sec):
         try:
             self._motore(pid, tipo, sec)
-        except (OSError, KeyError, ValueError):
-            pass  # prova cancellata durante il calcolo
+        except Exception as x:  # mai un fallimento muto: se la prova esiste ancora, l'errore va nella prova
+            try:
+                p = self.prova(pid)
+                p['emissioni'] = {'ok': False, 'errore': '%s: %s' % (type(x).__name__, x), 'tipo': tipo,
+                                  'data': datetime.now().strftime('%d/%m/%Y %H:%M')}
+                json.dump(p, open(os.path.join(self._p(pid), 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+            except (OSError, KeyError, ValueError):
+                pass  # prova cancellata durante il calcolo
         finally:
             self.job = None
 
     def _motore(self, pid, tipo, sec=6 * 3600):
         """Opzione 3 sulla prova, sincrona: salva prova.json['emissioni'] e l'archivio; restituisce le emissioni."""
+        with self.lock_lavoro:
+            return self._motore_in_lavoro(pid, tipo, sec)
+
+    def _motore_in_lavoro(self, pid, tipo, sec):
         d, out = self._p(pid), os.path.join(self.dir_lavoro, 'outputs')
         # l'opzione 3 parte dall'ultimo velivolo calcolato: si rimette in lavoro/ quello della prova
         shutil.copy2(os.path.join(d, 'HLInputs.yaml'), os.path.join(self.dir_lavoro, 'inputs', 'HLInputs.yaml'))
@@ -434,6 +462,8 @@ class Lab:
         if e:
             shutil.copytree(out, os.path.join(d, 'outputs'), dirs_exist_ok=True)
             e.update(ok=True, carta=motore.carta(out), lto=motore.lto(out) if tipo == 'crn' else None)
+            if tipo == 'crn' and not e['lto']:
+                tipo, e['nota'] = 'semplice', "CRN non riuscita (nessun risultato LTO leggibile): valgono solo motore ed equilibrio"
         else:
             err = [r for r in log.splitlines() if 'error' in r.lower()]
             e = {'ok': False, 'errore': '\n'.join(err[:10]) or 'ARIEL non ha scritto Engine_and_emissions.xlsx'}
@@ -467,11 +497,12 @@ class Lab:
     def f3(self, pid, giri=5, tol=0.01):
         """Anello F3 in un thread: sfc <- TSFC di progetto del motore, nuovo velivolo (opzione 2), motore (analisi semplice),
         finche' la sfc cambia meno di tol. Ogni giro e' una prova nuova; l'esito va in prova.json['f3_esito'] della prova di partenza."""
-        if self.job:
-            raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
-        if not self.prova(pid)['riepilogo'].get('ok'):
-            raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
-        self.job = {'id': pid, 'inizio': time.time(), 'tipo': 'f3', 'f3': {'giro': 0, 'sfc': []}}
+        with self._lock_job:
+            if self.job:
+                raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
+            if not self.prova(pid)['riepilogo'].get('ok'):
+                raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
+            self.job = {'id': pid, 'inizio': time.time(), 'tipo': 'f3', 'f3': {'giro': 0, 'sfc': []}}
         t = threading.Thread(target=self._f3, args=(pid, giri, tol), daemon=True)
         t.start()
         return t

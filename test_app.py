@@ -291,6 +291,19 @@ class LTO(unittest.TestCase):
         self.assertEqual((v['nox_lto'], v['fumo']), (True, False))
 
 
+class Lettore(unittest.TestCase):  # revisione #5: un exe vecchio non deve scrivere nel buffer di quello nuovo
+    def test_lettore_scrive_nel_suo_buffer(self):
+        class P:
+            class stdout:
+                dati = [b'Select an option [1-4]:', b'']
+                @classmethod
+                def read1(cls, n):
+                    return cls.dati.pop(0)
+        a = app.Ariel(['x'], '.'); vecchio = bytearray(); a.buf = bytearray()
+        a._leggi(P, vecchio)
+        self.assertEqual(bytes(vecchio), b'Select an option [1-4]:'); self.assertEqual(bytes(a.buf), b'')
+
+
 class Lavoro(unittest.TestCase):
     """ARIEL finto acceso una volta sola, due calcoli di fila; prove salvate; server HTTP."""
     @classmethod
@@ -301,6 +314,7 @@ class Lavoro(unittest.TestCase):
         # il finto ARIEL copia questo mftf_engine_design.xlsx; TSFC coerente con il foglio Engine di test_dati (27.4818 g/(kN s))
         mf = motore_v0(os.path.join(cls.dir, 'fixture'), tsfc_mftf=TSFC_DATI)
         os.environ['FAKE_MFTF'] = os.path.join(mf, motore.FILE_MOTORE[1])
+        os.environ['FAKE_CRN'] = os.path.join(crn_v0(os.path.join(cls.dir, 'fixture_crn')), motore.FILE_CRN)
         cls.ariel = app.Ariel([sys.executable, '-u', os.path.join(QUI, 'fake_ariel.py'), DATI], os.path.join(cls.dir, 'lavoro'))
         cls.ariel.stabile = 0.5  # secondi in cui i file del motore non devono cambiare (exe vero: 5)
         cls.lab = app.Lab(TEMPLATE, cls.ariel, os.path.join(cls.dir, 'lavoro'), os.path.join(cls.dir, 'prove'), valori_validi())
@@ -517,7 +531,7 @@ class Lavoro(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(d, '4_crn_emissions')))
         self.assertTrue(self.lab.calcola(valori_validi(), 'dopo', '')['riepilogo']['ok'])  # exe riavviato
 
-    def test_14_crn_completa(self):
+    def test_14_crn_completa(self):  # il finto ARIEL copia i risultati CRN di v0 (FAKE_CRN)
         v = valori_validi(); v['crew/crew_number [-]'] = 10
         p = self.lab.calcola(v, 'crn', '')
         self._crn(1)
@@ -526,7 +540,7 @@ class Lavoro(unittest.TestCase):
         finally:
             self._crn(None)
         e = self.lab.prova(p['id'])['emissioni']
-        self.assertEqual(e['tipo'], 'crn')
+        self.assertEqual(e['tipo'], 'crn'); self.assertAlmostEqual(e['lto']['F00_kN'], 200.1791, 4)
         self.assertTrue(os.path.isfile(os.path.join(self.lab.dir_prove, p['id'], 'outputs', '_work', 'Layer1', 'crn_case',
                                                     '4_crn_emissions', 'results', 'crn_emissions_results.xlsx')))
 
@@ -581,6 +595,79 @@ class Lavoro(unittest.TestCase):
         self.lab.cancella(p['id'])
         t.join(120)
         self.assertIsNone(self.lab.job)
+
+
+    def test_19_motore_aspetta_il_calcolo_in_corso(self):  # revisione #1: _motore non tocca lavoro/ durante l'opzione 2
+        v = valori_validi(); v['crew/crew_number [-]'] = 14
+        p = self.lab.calcola(v, 'lock', '')
+        with self.lab.lock_lavoro:
+            t = self.lab.emissioni(p['id'], 'semplice')
+            time.sleep(1.0)
+            self.assertFalse(os.path.isfile(os.path.join(self.lab.dir_prove, p['id'], 'log_emissioni.txt')))
+            self.assertTrue(t.is_alive())
+        t.join(60)
+        self.assertTrue(self.lab.prova(p['id'])['emissioni']['ok'])
+
+    def test_20_doppio_clic_un_solo_job(self):  # revisione #2: controllo e assegnazione di job atomici
+        v = valori_validi(); v['crew/crew_number [-]'] = 15
+        p = self.lab.calcola(v, 'doppio', '')
+        lento = self.lab.dal_archivio
+        self.lab.dal_archivio = lambda pid, tipo: (time.sleep(0.3), lento(pid, tipo))[1]
+        esiti, th = [], []
+        def lancia():
+            try:
+                th.append(self.lab.emissioni(p['id'], 'semplice')); esiti.append('ok')
+            except ValueError:
+                esiti.append('no')
+        try:
+            a, b = threading.Thread(target=lancia), threading.Thread(target=lancia)
+            a.start(); b.start(); a.join(); b.join()
+        finally:
+            self.lab.dal_archivio = lento
+        for x in th:
+            x and x.join(60)
+        self.assertEqual(sorted(esiti), ['no', 'ok'])
+
+    def test_21_impronta_con_il_database_della_prova(self):  # revisione #3
+        v = valori_validi(); v['crew/crew_number [-]'] = 16
+        p = self.lab.calcola(v, 'db', '')
+        prima = self.lab.impronta(p['id'])
+        db = os.path.join(self.lab.dir_lavoro, 'inputs', 'StatDatabase.xlsx')
+        vecchio = open(db, 'rb').read()
+        try:
+            open(db, 'wb').write(b'altro database')
+            self.assertEqual(self.lab.impronta(p['id']), prima)
+            self.assertNotEqual(self.lab.impronta(self.lab.calcola(v, 'db2', '')['id']), prima)
+        finally:
+            open(db, 'wb').write(vecchio)
+
+    def test_22_crn_fallita_non_vale_come_crn(self):  # revisione #4
+        v = valori_validi(); v['crew/crew_number [-]'] = 17
+        p = self.lab.calcola(v, 'crn ko', '')
+        vecchio = os.environ.pop('FAKE_CRN')  # il finto ARIEL scrive un file CRN illeggibile
+        self.ariel.chiudi()  # l'ambiente vale al riavvio dell'exe
+        self._crn(0.1)
+        try:
+            self.lab.emissioni(p['id'], 'crn').join(60)
+        finally:
+            self._crn(None); os.environ['FAKE_CRN'] = vecchio; self.ariel.chiudi()
+        e = self.lab.prova(p['id'])['emissioni']
+        self.assertTrue(e['ok']); self.assertEqual(e['tipo'], 'semplice'); self.assertIn('CRN', e['nota'])
+        self.assertIsNone(self.lab.dal_archivio(p['id'], 'crn'))
+
+    def test_23_errore_del_thread_scritto_nella_prova(self):  # revisione #6
+        v = valori_validi(); v['crew/crew_number [-]'] = 18
+        p = self.lab.calcola(v, 'errore', '')
+        vero = self.lab._motore
+        def rotto(*a, **k):
+            raise OSError('disco pieno')
+        self.lab._motore = rotto
+        try:
+            self.lab.emissioni(p['id'], 'semplice').join(10)
+        finally:
+            self.lab._motore = vero
+        e = self.lab.prova(p['id'])['emissioni']
+        self.assertFalse(e['ok']); self.assertIn('disco pieno', e['errore']); self.assertIsNone(self.lab.job)
 
 
 if __name__ == '__main__':

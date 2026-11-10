@@ -124,12 +124,18 @@ def tsfc_si(dir_out):
     return a
 
 
-def impronta(valori, db_path, exe_path):
-    """sha256 degli ingressi dell'opzione 3: valori (chiavi in ordine, cifre esatte), byte del database, dimensione dell'exe."""
+def sha(path):
+    import hashlib
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def impronta(valori, db, exe_path):
+    """sha256 degli ingressi dell'opzione 3: valori (chiavi in ordine, cifre esatte), database (percorso, oppure il suo
+    sha256 gia' calcolato), dimensione dell'exe."""
     import hashlib, json
     h = hashlib.sha256(json.dumps(valori, sort_keys=True).encode('utf-8'))
-    with open(db_path, 'rb') as f:
-        h.update(f.read())
+    h.update((sha(db) if os.path.isfile(db) else db).encode())
     h.update(str(os.path.getsize(exe_path)).encode())
     return h.hexdigest()
 

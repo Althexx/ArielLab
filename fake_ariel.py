@@ -29,7 +29,10 @@ def motore():
         print('CRN running...', flush=True)
         time.sleep(float(open('fake_crn_sec.txt').read()))
         d = os.path.join('outputs', '_work', 'Layer1', 'crn_case', '4_crn_emissions', 'results'); os.makedirs(d, exist_ok=True)
-        open(os.path.join(d, 'crn_emissions_results.xlsx'), 'wb').write(b'crn')
+        if os.environ.get('FAKE_CRN'):
+            shutil.copy2(os.environ['FAKE_CRN'], d)
+        else:  # CRN fallita: file illeggibile
+            open(os.path.join(d, 'crn_emissions_results.xlsx'), 'wb').write(b'crn')
     print('Engine and emissions done')
 
 while True:
