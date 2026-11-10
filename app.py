@@ -433,7 +433,7 @@ class Lab:
         e = emissioni(out)
         if e:
             shutil.copytree(out, os.path.join(d, 'outputs'), dirs_exist_ok=True)
-            e.update(ok=True, carta=motore.carta(out))
+            e.update(ok=True, carta=motore.carta(out), lto=motore.lto(out) if tipo == 'crn' else None)
         else:
             err = [r for r in log.splitlines() if 'error' in r.lower()]
             e = {'ok': False, 'errore': '\n'.join(err[:10]) or 'ARIEL non ha scritto Engine_and_emissions.xlsx'}

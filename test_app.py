@@ -258,6 +258,39 @@ class Vincoli(unittest.TestCase):
         self.assertEqual(motore.migliore([a, b, c], motore.VINCOLI0, 'MTOM')[0], 'C')
 
 
+def crn_v0(d):
+    """Risultati CRN di v0 (10/11): fogli Summary e 'LTO and ICAO limits' di crn_emissions_results.xlsx."""
+    nota = 'partial LTO cycle, phases missing: Descent, Taxi; totals over Take-off, Climb, Approach'
+    scrivi_xlsx(os.path.join(d, motore.FILE_CRN), {
+        'Summary': [['Item', 'Value'], ['LTO cycle', nota], ['F00 [kN]', 200.1791], ['pi_oo', 25.47689]],
+        'LTO and ICAO limits': [['Species', 'Dp_g_selected', 'Dp_F00_selected', 'Dp_F00_baseline', 'ICAO_limit', 'ratio_selected', 'Note'],
+                                ['NOx', 8656.0, 43.24136, 46.53, 97.65408, 0.44280, nota], ['CO', 772.5, 3.85922, 4.55, 162.06175, 0.02381, nota],
+                                ['UHC', 101.9, 0.50896, 0.58, 16.73225, 0.03042, nota], ['SN max', '', 23.46264, 23.46, 19.57120, 1.19883, 'smoke number']]})
+    return d
+
+
+class LTO(unittest.TestCase):
+    def test_lto_contro_icao(self):
+        l = motore.lto(crn_v0(tempfile.mkdtemp()))
+        self.assertAlmostEqual(l['F00_kN'], 200.1791, 4); self.assertAlmostEqual(l['OPR00'], 25.47689, 5)
+        self.assertAlmostEqual(l['NOx_limite'], 36 + 2.42 * 25.47689, 3)  # limite ICAO dei motori supersonici
+        self.assertAlmostEqual(l['NOx_gkN'] / l['NOx_limite'], 0.4428, 4)
+        self.assertAlmostEqual(l['SN'] / l['SN_limite'], 1.1988, 4)
+        self.assertIn('Descent', l['parziale'])
+
+    def test_lto_senza_crn(self):
+        self.assertIsNone(motore.lto('/non/esiste'))
+
+    def test_grandezze_con_crn(self):
+        p = prova_motore('v0', 224103, 182.18, 285.8, crn=True)
+        p['emissioni']['lto'] = motore.lto(crn_v0(tempfile.mkdtemp()))
+        g = motore.grandezze(p)
+        self.assertAlmostEqual(g['spinta_decollo'], 200.1791 / 285.8, 4)  # con la CRN: F00 statica contro statica
+        self.assertAlmostEqual(g['nox_lto'], 0.4428, 4); self.assertAlmostEqual(g['fumo'], 1.1988, 4)
+        v = motore.verifica(g, motore.VINCOLI0)
+        self.assertEqual((v['nox_lto'], v['fumo']), (True, False))
+
+
 class Lavoro(unittest.TestCase):
     """ARIEL finto acceso una volta sola, due calcoli di fila; prove salvate; server HTTP."""
     @classmethod

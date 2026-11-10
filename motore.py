@@ -137,6 +137,7 @@ def impronta(valori, db_path, exe_path):
 # ---------------------------------------------------------------- vincoli e candidato migliore
 VINCOLI0 = [{'id': 'spinta_decollo', 'nome': 'Spinta al decollo disponibile / richiesta', 'min': 1.0},
             {'id': 'nox_lto', 'nome': 'NOx LTO / limite ICAO', 'max': 1.0},
+            {'id': 'fumo', 'nome': 'Fumo (SN) / limite ICAO', 'max': 1.0},
             {'id': 'fan', 'nome': 'Diametro del fan [m]', 'max': 1.25},
             {'id': 'tt4', 'nome': 'Tt4 massimo [K]', 'max': 1500}]
 CRITERI = {'MTOM': 'MTOM', 'fuel': 'combustibile di missione', 'co2_pkm': 'CO₂ per passeggero·km', 'TSFC': 'TSFC di crociera'}
@@ -156,9 +157,11 @@ def grandezze(prova):
     tt4 = [x for x in map(num, _riga(e, 'Tt4')) if x is not None]
     co2, fuel = _riga(e, 'CO₂'), _riga(e, 'Combustibile')
     pax, rng = v.get('payload/passenger_number [-]'), v.get('flight_expected_performances/range [km]')
-    return {'spinta_decollo': fn_to / r['T_eng'] if fn_to and r.get('T_eng') else None,
-            'Fn_decollo': fn_to, 'T_richiesta': r.get('T_eng'),
-            'nox_lto': lto['NOx_gkN'] / lto['NOx_limite'] if lto.get('NOx_gkN') and lto.get('NOx_limite') else None,
+    disp = lto.get('F00_kN') or fn_to  # con la CRN: F00 statica al livello del mare, come la spinta richiesta
+    rap = lambda a, b: lto[a] / lto[b] if lto.get(a) is not None and lto.get(b) else None
+    return {'spinta_decollo': disp / r['T_eng'] if disp and r.get('T_eng') else None,
+            'Fn_decollo': fn_to, 'F00': lto.get('F00_kN'), 'T_richiesta': r.get('T_eng'),
+            'nox_lto': rap('NOx_gkN', 'NOx_limite'), 'fumo': rap('SN', 'SN_limite'),
             'fan': carta.get('fan'), 'tt4': max(tt4) if tt4 else None,
             'co2_pkm': num(co2[-1]) / (pax * rng) if co2 and num(co2[-1]) and pax and rng else None,
             'fuel': num(fuel[-1]) if fuel else None, 'MTOM': r.get('MTOM'), 'TSFC': carta.get('TSFC')}
@@ -203,3 +206,23 @@ def controlla_vincoli(vincoli):
             if c.get(k) is not None and (isinstance(c[k], bool) or not isinstance(c[k], (int, float))):
                 raise ValueError('%s di "%s" non e\' un numero' % (k, c['nome']))
     return vincoli
+
+
+# ---------------------------------------------------------------- CRN: ciclo LTO contro i limiti ICAO (Annex 16 Vol. II)
+FILE_CRN = '_work/Layer1/crn_case/4_crn_emissions/results/crn_emissions_results.xlsx'
+GRAFICO_LTO = '_work/Layer1/crn_case/4_crn_emissions/results/figures/04_LTO_vs_ICAO_limits.png'
+
+
+def lto(dir_out):
+    """Dp/F00 del ciclo LTO e limiti ICAO dalla CRN (fogli Summary e 'LTO and ICAO limits'); None senza CRN.
+    I limiti sono quelli scritti dall'exe (NOx = 36 + 2,42*pi00 per i motori supersonici)."""
+    f = os.path.join(dir_out, FILE_CRN)
+    s, t = _tabella(_xlsx(f, 'Summary')), _tabella(_xlsx(f, 'LTO and ICAO limits'))
+    if not s or not t:
+        return None
+    v = lambda k, i: _num((t.get(k) or [None] * 5)[i])  # colonne dopo la specie: Dp_g, Dp/F00, baseline, limite, rapporto
+    return {'F00_kN': _num(s.get('F00 [kN]', [None])[0]), 'OPR00': _num(s.get('pi_oo', [None])[0]),
+            'NOx_gkN': v('NOx', 1), 'NOx_limite': v('NOx', 3), 'CO_gkN': v('CO', 1), 'CO_limite': v('CO', 3),
+            'HC_gkN': v('UHC', 1), 'HC_limite': v('UHC', 3), 'SN': v('SN max', 1), 'SN_limite': v('SN max', 3),
+            'parziale': (s.get('LTO cycle') or [''])[0] if 'partial' in (s.get('LTO cycle') or [''])[0] else None,
+            'grafico': GRAFICO_LTO if os.path.isfile(os.path.join(dir_out, GRAFICO_LTO)) else None}
