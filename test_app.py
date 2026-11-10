@@ -209,6 +209,17 @@ class Motore(unittest.TestCase):
         self.assertIsNone(motore.carta('/non/esiste'))
 
 
+class Impronta(unittest.TestCase):
+    def test_impronta_ordine_e_cifre(self):
+        d = tempfile.mkdtemp(); db, exe = os.path.join(d, 'db.xlsx'), os.path.join(d, 'x.exe')
+        open(db, 'wb').write(b'database'); open(exe, 'wb').write(b'exe')
+        a = motore.impronta({'x': 1, 'y': 3.537e-05}, db, exe); b = motore.impronta({'y': 3.537e-05, 'x': 1}, db, exe)
+        c = motore.impronta({'x': 1, 'y': 3.5370001e-05}, db, exe)
+        self.assertEqual(a, b); self.assertNotEqual(a, c)
+        open(db, 'wb').write(b'database 2')
+        self.assertNotEqual(a, motore.impronta({'x': 1, 'y': 3.537e-05}, db, exe))
+
+
 class Lavoro(unittest.TestCase):
     """ARIEL finto acceso una volta sola, due calcoli di fila; prove salvate; server HTTP."""
     @classmethod
@@ -316,7 +327,9 @@ class Lavoro(unittest.TestCase):
 
     def test_8_motore_ed_emissioni(self):
         p = self._prova_ok()
-        self.lab.emissioni(p['id']).join(30)
+        t = self.lab.emissioni(p['id'])  # None se gli stessi ingressi sono gia' nell'archivio (test_10 gira prima)
+        if t:
+            t.join(30)
         q = self.lab.prova(p['id'])
         self.assertTrue(q['emissioni']['ok'], q['emissioni'])
         self.assertEqual(q['emissioni']['fasi'][-1], 'Mission total')
@@ -369,6 +382,37 @@ class Lavoro(unittest.TestCase):
             self.assertTrue(next(p for p in st['prove'] if p['id'] == pid)['emissioni']['ok'])
         finally:
             srv.shutdown()
+
+
+    def _opz3(self):
+        f = os.path.join(self.lab.dir_lavoro, 'conteggio_opz3.txt')
+        return int(open(f).read()) if os.path.isfile(f) else 0
+
+    def test_11_riuso_tra_prove_uguali(self):
+        v = valori_validi(); v['crew/crew_number [-]'] = 7  # ingressi unici per questo test
+        p1, p2 = self.lab.calcola(v, 'cache 1', ''), self.lab.calcola(v, 'cache 2', '')
+        self.lab.emissioni(p1['id']).join(30)
+        n = self._opz3()
+        t = self.lab.emissioni(p2['id'])
+        if t:
+            t.join(30)
+        self.assertEqual(self._opz3(), n)  # l'exe non e' stato lanciato
+        e = self.lab.prova(p2['id'])['emissioni']
+        self.assertTrue(e['ok']); self.assertEqual(e['riusato_da'], p1['id'])
+        d = os.path.join(self.lab.dir_prove, p2['id'])
+        self.assertTrue(os.path.isfile(os.path.join(d, 'outputs', 'Layer1', 'Engine_and_emissions.xlsx')))
+        self.assertTrue(os.path.isfile(os.path.join(d, 'log_emissioni.txt')))
+
+    def test_12_semplice_non_vale_come_crn(self):
+        v = valori_validi(); v['crew/crew_number [-]'] = 8
+        p = self.lab.calcola(v, 'tipo', '')
+        self.lab.emissioni(p['id']).join(30)
+        imp = self.lab.prova(p['id'])['emissioni']['impronta']
+        f = os.path.join(self.lab.archivio, imp, 'emissioni.json')
+        e = json.load(open(f, encoding='utf-8')); e['tipo'] = 'semplice'; json.dump(e, open(f, 'w', encoding='utf-8'))
+        q = self.lab.calcola(v, 'tipo 2', '')
+        self.assertIsNone(self.lab.dal_archivio(q['id'], 'crn'))
+        self.assertEqual(self.lab.dal_archivio(q['id'], 'semplice')['riusato_da'], p['id'])
 
 
 if __name__ == '__main__':

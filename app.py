@@ -182,6 +182,7 @@ def riepilogo(dir_out, log):
 
 
 # ---------------------------------------------------------------- motore ed emissioni (opzione 3): in motore.py
+import motore  # noqa: E402
 from motore import _xlsx, RIGHE_EM, segmenti as emissioni  # noqa: E402  (nomi usati dai test e dal Lab)
 
 
@@ -255,6 +256,7 @@ class Lab:
         self.template, self.sch, self.ariel = template, schema(template), ariel
         self.dir_lavoro, self.dir_prove, self.valori0, self.note = dir_lavoro, dir_prove, valori, list(note)
         self.job = None  # {'id', 'inizio'} della prova di cui ARIEL sta calcolando motore ed emissioni
+        self.archivio = os.path.join(dir_lavoro, 'archivio')  # risultati dell'opzione 3 per impronta degli ingressi
         os.makedirs(dir_prove, exist_ok=True)
 
     def _p(self, pid):
@@ -316,12 +318,53 @@ class Lab:
     def cancella(self, pid):
         shutil.rmtree(self._p(pid))
 
+    def impronta(self, pid):
+        db = next((os.path.join(self.dir_lavoro, 'inputs', x) for x in sorted(os.listdir(os.path.join(self.dir_lavoro, 'inputs')))
+                   if x.lower().endswith('.xlsx')), None)
+        return motore.impronta(self.prova(pid)['valori'], db, self.ariel.cmd[0])
+
+    def _salva_archivio(self, pid, e):
+        """Copia risultati e log dell'opzione 3 della prova nell'archivio, sotto la sua impronta."""
+        d, a = self._p(pid), os.path.join(self.archivio, e['impronta'])
+        if os.path.isdir(a):
+            shutil.rmtree(a)
+        for sub in ('Layer1', os.path.join('_work', 'Layer1', 'crn_case')):
+            if os.path.isdir(os.path.join(d, 'outputs', sub)):
+                shutil.copytree(os.path.join(d, 'outputs', sub), os.path.join(a, 'outputs', sub))
+        os.makedirs(a, exist_ok=True)
+        if os.path.isfile(os.path.join(d, 'log_emissioni.txt')):
+            shutil.copy2(os.path.join(d, 'log_emissioni.txt'), a)
+        json.dump(dict(e, prova=pid), open(os.path.join(a, 'emissioni.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+
+    def dal_archivio(self, pid, tipo):
+        """Se l'archivio ha un risultato con gli stessi ingressi e un tipo sufficiente (la CRN vale anche come semplice),
+        lo copia nella prova e restituisce le sue emissioni; altrimenti None."""
+        a = os.path.join(self.archivio, self.impronta(pid))
+        try:
+            e = json.load(open(os.path.join(a, 'emissioni.json'), encoding='utf-8'))
+        except (OSError, ValueError):
+            return None
+        if not e.get('ok') or (tipo == 'crn' and e.get('tipo', 'crn') != 'crn'):
+            return None
+        d = self._p(pid)
+        if os.path.isdir(os.path.join(a, 'outputs')):
+            shutil.copytree(os.path.join(a, 'outputs'), os.path.join(d, 'outputs'), dirs_exist_ok=True)
+        if os.path.isfile(os.path.join(a, 'log_emissioni.txt')):
+            shutil.copy2(os.path.join(a, 'log_emissioni.txt'), d)
+        e = dict(e, riusato_da=e.pop('prova', None))
+        p = self.prova(pid); p['emissioni'] = e
+        json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        return e
+
     def emissioni(self, pid, sec=6 * 3600):
-        """Avvia in un thread l'opzione 3 di ARIEL (motore ed emissioni) sul velivolo della prova."""
+        """Avvia in un thread l'opzione 3 di ARIEL (motore ed emissioni) sul velivolo della prova.
+        Se lo stesso calcolo e' gia' nell'archivio lo riusa e restituisce None (nessun thread)."""
         if self.job:
             raise ValueError('ARIEL sta gia\' calcolando motore ed emissioni')
         if not self.prova(pid)['riepilogo'].get('ok'):
             raise ValueError('la prova non converge: non c\'e\' un velivolo su cui progettare il motore')
+        if self.dal_archivio(pid, 'crn'):
+            return None
         self.job = {'id': pid, 'inizio': time.time()}
         t = threading.Thread(target=self._emissioni, args=(pid, sec), daemon=True)
         t.start()
@@ -351,10 +394,13 @@ class Lab:
             else:
                 err = [r for r in log.splitlines() if 'error' in r.lower()]
                 e = {'ok': False, 'errore': '\n'.join(err[:10]) or 'ARIEL non ha scritto Engine_and_emissions.xlsx'}
-            e.update(secondi=round(time.time() - t0), data=datetime.now().strftime('%d/%m/%Y %H:%M'))
+            e.update(secondi=round(time.time() - t0), data=datetime.now().strftime('%d/%m/%Y %H:%M'), tipo='crn',
+                     impronta=self.impronta(pid))
             p = self.prova(pid)  # riletta: nome e nota possono essere cambiati durante il calcolo
             p['emissioni'] = e
             json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+            if e['ok']:
+                self._salva_archivio(pid, e)
         except (OSError, KeyError, ValueError):
             pass  # prova cancellata durante il calcolo
         finally:

@@ -15,6 +15,8 @@ def calcolo():
     print('Iteration: 1\nMTOM=114206 [kg]\nFuel_f=48.98 %\nConverged in 33 iterations')
 
 def motore():
+    n = int(open('conteggio_opz3.txt').read()) if os.path.isfile('conteggio_opz3.txt') else 0
+    open('conteggio_opz3.txt', 'w').write(str(n + 1))
     v = yaml.safe_load(open(os.path.join('inputs', 'HLInputs.yaml'), encoding='utf-8'))
     if v['payload']['passenger_number [-]'] == 99:
         print('Error: engine on-design optimisation found no feasible design')

@@ -122,3 +122,13 @@ def tsfc_si(dir_out):
     if abs(a - b * 1e-6) > 1e-3 * a:
         raise ValueError('TSFC incoerente tra i file: %.4g kg/(N s) contro %.4g g/(kN s)' % (a, b))
     return a
+
+
+def impronta(valori, db_path, exe_path):
+    """sha256 degli ingressi dell'opzione 3: valori (chiavi in ordine, cifre esatte), byte del database, dimensione dell'exe."""
+    import hashlib, json
+    h = hashlib.sha256(json.dumps(valori, sort_keys=True).encode('utf-8'))
+    with open(db_path, 'rb') as f:
+        h.update(f.read())
+    h.update(str(os.path.getsize(exe_path)).encode())
+    return h.hexdigest()
