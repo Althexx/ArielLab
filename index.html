@@ -140,7 +140,13 @@ svg text{fill:var(--mut);font-size:11px}
     <div class="box" id="barbox"><h2>Spinta richiesta da ogni vincolo</h2><p class="note" style="margin:-6px 0 10px">T/W richiesto da ciascuna fase al carico alare di progetto. Il vincolo più alto fissa la spinta (in arancione).</p><div class="bars" id="bars"></div></div>
     <div class="imgs" id="imgs"></div>
   </section>
-  <section id="t-em" class="hid"><div class="box" id="embox"></div></section>
+  <section id="t-em" class="hid">
+    <div class="box"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Confronto dei motori</h2>
+      <span class="row"><span class="note">Migliore = minimo di</span><select id="criterio"><option value="MTOM">MTOM</option><option value="fuel">combustibile di missione</option><option value="co2_pkm">CO₂ per passeggero·km</option><option value="TSFC">TSFC di crociera</option></select></span></div>
+      <p class="note" style="margin-top:0">Ogni colonna è un velivolo con il suo motore (opzione 3). ✅ rispetta il vincolo, ❌ no, — non verificabile (per esempio senza CRN). Clic sul nome per il profilo completo qui sotto.</p>
+      <div id="confronto"></div>
+      <details style="margin-top:12px"><summary class="note" style="cursor:pointer">Vincoli (li decidi tu)</summary><div id="vincoli" style="margin-top:8px"></div></details></div>
+    <div class="box" id="embox"></div></section>
   <section id="t-conf" class="hid">
     <div class="box"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Prove salvate</h2><button class="btn sm" id="csv">Esporta CSV delle prove spuntate</button></div>
       <p class="note" style="margin:0 0 8px">Clic sul nome per aprire la prova. <span class="star">★</span> = prova di riferimento: gli input diversi da lei sono evidenziati in giallo a sinistra, e i risultati mostrano la differenza da lei.</p>
@@ -193,10 +199,10 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const rif=()=>S.prove.find(p=>p.rif);
 const sc=(c,x)=>c.scelte?(String(x)==='1'?'presente':'assente'):fv(x);
 async function api(u,b){const r=await fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{});return r.json()}
-function stato(ok,job){$('#st').classList.toggle('ok',ok&&!job);$('#st span').textContent=job?`ARIEL calcola motore ed emissioni da ${Math.round((Date.now()/1000-job.inizio)/60)} min…`:ok?'ARIEL pronto · un calcolo richiede 5–15 s':'ARIEL si sta avviando (circa 20 s)…'}
+function stato(ok,job){$('#st').classList.toggle('ok',ok&&!job);$('#st span').textContent=job?`ARIEL ${job.tipo==='f3'?'fa l’anello F3 (giro '+((job.f3||{}).giro??0)+')':'calcola il motore'} da ${Math.round((Date.now()/1000-job.inizio)/60)} min…`:ok?'ARIEL pronto · un calcolo richiede 5–15 s':'ARIEL si sta avviando (circa 20 s)…'}
 async function carica(sel){S=await api('/api/stato');if(!Object.keys(V).length)V={...S.valori};if(sel!==undefined)SEL=sel;else if(!SEL&&S.prove.length)SEL=S.prove[0].id;
   $('#conv').innerHTML=S.note.length?'Input del pacchetto convertiti al formato della release del 27/10: '+S.note.map(esc).join('; ')+'.':'';
-  stato(S.ariel_pronto,S.job);campi();prova();lista();serieSel();$('#sgo').disabled=!!S.job}
+  stato(S.ariel_pronto,S.job);campi();prova();lista();serieSel();motori();$('#sgo').disabled=!!S.job}
 function errore(c,x){if(x===''||x==null||(c.scelte?false:isNaN(x)))return'manca il valore';if(c.scelte)return'';if(c.min!=null&&(x<c.min||x>c.max))return`valore ammesso da ${fv(c.min)} a ${fv(c.max)}`;if(c.positivo&&x<=0)return'deve essere positivo';if(c.intero&&x!=Math.round(x))return'deve essere un numero intero';return''}
 const diverso=(c,R)=>R&&String(R.valori[c.id])!==String(V[c.id]);
 function campi(){const R=rif(),per={};S.schema.forEach(c=>{const g=info(c)[0];(per[g]=per[g]||[]).push(c)});
@@ -230,28 +236,68 @@ function prova(){const p=S.prove.find(p=>p.id===SEL),R=rif();$('#perr').classLis
 // motore ed emissioni (opzione 3 di ARIEL): tabella per fase del foglio Segments di Engine_and_emissions.xlsx
 const FASI={'Take-off':'Decollo','2nd segment (climb-out)':'2° segmento','Subsonic climb':'Salita subsonica','Subsonic cruise':'Crociera subsonica','Supersonic climb and acceleration':'Salita e accelerazione supersonica','Supersonic cruise':'Crociera supersonica','Descent':'Discesa','Approach':'Avvicinamento','Landing and taxi-in (idle)':'Atterraggio e rullaggio','Mission total':'Totale missione'};
 const EMK=[['Combustibile','Combustibile','t',1,1000],['CO₂','CO₂','t',1,1000],['NOx, equilibrio','NOx, equilibrio','kg',0],['NOx, P3-T3','NOx, P3-T3','kg',0],['CO, P3-T3','CO, P3-T3','kg',1]];
+// confronto dei motori: candidati, vincoli (decisi da Alex), migliore
+let M={candidati:[],vincoli:[],migliore:null,testo:''};
+const SI=x=>x===true?'<span style="color:var(--ok)">✅</span>':x===false?'<span style="color:var(--bad)">❌</span>':'<span class="note">—</span>';
+const GRM=[['MTOM','MTOM [t]',1,1000],['fuel','Combustibile di missione [t]',1,1000],['TSFC','TSFC crociera [10⁻⁵ kg/(N·s)]',3,1e-5],['co2_pkm','CO₂ per passeggero·km [kg]',3],
+  ['spinta_decollo','Spinta al decollo disponibile / richiesta',2],['F00','Spinta statica al decollo F00 [kN]',0],['T_richiesta','Spinta richiesta per motore [kN]',0],
+  ['nox_lto','NOx LTO / limite ICAO',2],['fumo','Fumo (SN) / limite ICAO',2],['fan','Diametro del fan [m]',3],['tt4','Tt4 massimo [K]',0]];
+async function motori(){M=await api('/api/motori?criterio='+encodeURIComponent($('#criterio').value));confrontoMotori();vincoliBox()}
+function confrontoMotori(){const C=M.candidati;
+  if(!C.length){$('#confronto').innerHTML='<p class="note">Nessun motore calcolato: scegli una prova qui sotto e lancia l\'analisi semplice.</p>';return}
+  const th=C.map(c=>`<th style="white-space:normal;min-width:110px;${c.id===M.migliore?'background:var(--chg);color:var(--chgfg)':''}"><button class="nm" data-m="${esc(c.id)}">${c.id===M.migliore?'<span class="star">★</span> ':''}${esc(c.nome)}</button><br><span class="note">${c.tipo==='crn'?'con CRN':'analisi semplice'}${c.riusato_da?' · riusato':''}</span></th>`).join('');
+  const td=(c,h)=>`<td style="${c.id===M.migliore?'background:var(--chg)':''}">${h}</td>`;
+  let h=`<table><tr><th></th>${th}</tr><tr><th colspan="${C.length+1}" style="text-align:left">Vincoli</th></tr>`;
+  h+=M.vincoli.map(v=>`<tr><td>${esc(v.nome)} <span class="note">${v.min!=null?'≥ '+fv(v.min):''}${v.max!=null?'≤ '+fv(v.max):''}</span></td>${C.map(c=>td(c,SI(c.verifica[v.id])+' '+fmt(c.grandezze[v.id],2))).join('')}</tr>`).join('');
+  h+=`<tr><th colspan="${C.length+1}" style="text-align:left">Grandezze</th></tr>`+GRM.map(([k,l,d,div])=>`<tr><td>${l}</td>${C.map(c=>{const x=c.grandezze[k];return td(c,fmt(x==null?null:x/(div||1),d))}).join('')}</tr>`).join('');
+  const dif=[...new Set(C.flatMap(c=>Object.keys(c.diversi)))];
+  if(dif.length)h+=`<tr><th colspan="${C.length+1}" style="text-align:left">Input diversi dal primo candidato (${dif.length})</th></tr>`+dif.map(k=>{const sc_=S.schema.find(s=>s.id===k);return `<tr><td>${sc_?lab(sc_):esc(k)}</td>${C.map(c=>td(c,k in c.diversi?`<b>${esc(fv(c.diversi[k]))}</b>`:'=')).join('')}</tr>`}).join('');
+  $('#confronto').innerHTML=h+`</table><p class="note">${M.migliore?'<span class="star">★</span> ':''}${esc(M.testo)}</p>`}
+function vincoliBox(){$('#vincoli').innerHTML=`<table><tr><th>Vincolo</th><th>minimo</th><th>massimo</th></tr>${M.vincoli.map((v,i)=>`<tr><td>${esc(v.nome)}</td><td><input type="number" step="any" data-vi="${i}" data-k="min" value="${v.min??''}" style="width:90px"></td><td><input type="number" step="any" data-vi="${i}" data-k="max" value="${v.max??''}" style="width:90px"></td></tr>`).join('')}</table><button class="btn pri" id="vsalva" style="margin-top:8px">Salva i vincoli</button> <span class="note" id="vmsg"></span>`}
+$('#criterio').onchange=motori;
+$('#vincoli').addEventListener('click',async e=>{if(e.target.id!=='vsalva')return;const V2=M.vincoli.map(v=>({...v}));
+  document.querySelectorAll('#vincoli input').forEach(i=>{const v=V2[i.dataset.vi];v[i.dataset.k]=i.value===''?null:Number(i.value)});
+  const r=await api('/api/vincoli',V2);$('#vmsg').textContent=r.errore||'salvati';motori()});
+$('#confronto').addEventListener('click',e=>{const id=e.target.closest('[data-m]')?.dataset.m;if(!id)return;SEL=id;prova();$('#embox').scrollIntoView({behavior:'smooth'})});
+// profilo completo di un candidato (vista A)
 function emBox(p){const b=$('#embox'),ok=S.prove.filter(q=>q.riepilogo.ok);
-  const scegli=`<div class="row" style="margin-bottom:12px"><span class="note">Velivolo della prova</span><select id="emsel" style="max-width:420px">${p&&!p.riepilogo.ok?`<option selected>${esc(p.nome)} (non converge)</option>`:''}${ok.map(q=>`<option value="${esc(q.id)}" ${p&&q.id===p.id?'selected':''}>${q.rif?'★ ':''}${esc(q.nome)} · ${esc(q.data)}${q.emissioni&&q.emissioni.ok?' · emissioni calcolate':''}</option>`).join('')}</select></div>`;
-  if(!p||!p.riepilogo.ok){b.innerHTML=`<h2>Motore ed emissioni</h2>${ok.length?scegli+'<p class="note">Scegli una prova che converge: il motore si progetta sul suo velivolo.</p>':'<p class="note">Nessuna prova converge: calcola prima un velivolo nella colonna di sinistra.</p>'}`;return}
-  const J=S.job,e=p.emissioni,mio=J&&J.id===p.id;
-  let h=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Motore ed emissioni</h2><button class="btn ${e?'':'pri'}" id="emgo" ${J?'disabled':''}>${e?'Ricalcola motore ed emissioni':'Calcola motore ed emissioni'}</button></div>`+scegli;
-  if(mio)h+=`<p class="note">ARIEL sta progettando il motore su questo velivolo e calcolando le emissioni (opzione 3 del menu), dalle ${new Date(J.inizio*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}. Dura da decine di minuti a più di un'ora. Non chiudere la finestra nera della dashboard e non sospendere il PC.</p>`;
-  else if(J)h+='<p class="note">ARIEL sta calcolando motore ed emissioni di un\'altra prova: aspetta che finisca.</p>';
-  if(!e&&!mio)h+='<p class="note">ARIEL progetta il motore su questo velivolo e calcola combustibile, stato della camera di combustione, indici di emissione e kg emessi in ogni fase della missione (opzione 3 del menu). Dura da decine di minuti a più di un\'ora; nel frattempo non si possono fare altri calcoli.</p>';
+  const scegli=`<div class="row" style="margin-bottom:12px"><span class="note">Velivolo della prova</span><select id="emsel" style="max-width:420px">${p&&!p.riepilogo.ok?`<option selected>${esc(p.nome)} (non converge)</option>`:''}${ok.map(q=>`<option value="${esc(q.id)}" ${p&&q.id===p.id?'selected':''}>${q.rif?'★ ':''}${esc(q.nome)} · ${esc(q.data)}${q.emissioni&&q.emissioni.ok?' · motore calcolato':''}</option>`).join('')}</select></div>`;
+  if(!p||!p.riepilogo.ok){b.innerHTML=`<h2>Profilo del motore</h2>${ok.length?scegli+'<p class="note">Scegli una prova che converge: il motore si progetta sul suo velivolo.</p>':'<p class="note">Nessuna prova converge: calcola prima un velivolo nella colonna di sinistra.</p>'}`;return}
+  const J=S.job,e=p.emissioni,mio=J&&J.id===p.id,dis=J?'disabled':'';
+  let h=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Profilo del motore</h2><span class="row">
+    <button class="btn ${e&&e.ok?'':'pri'}" data-go="semplice" ${dis} title="L'exe si ferma dopo il motore: niente CRN">Analisi semplice (~15 min)</button>
+    <button class="btn" data-go="crn" ${dis} title="Opzione 3 completa, con la CRN e il ciclo LTO contro i limiti ICAO">Con CRN (oltre 1 h)</button>
+    <button class="btn" data-go="f3" ${dis} title="sfc ← TSFC del motore, nuovo velivolo, nuovo motore… finché la sfc cambia meno dell'1 %">Anello F3</button></span></div>`+scegli;
+  if(mio)h+=`<p class="note">ARIEL sta lavorando su questa prova (${J.tipo==='f3'?'anello F3, giro '+((J.f3||{}).giro??0):J.tipo==='crn'?'motore + CRN':'analisi semplice'}) dalle ${new Date(J.inizio*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}. Non chiudere la finestra nera della dashboard e non sospendere il PC.</p>`;
+  else if(J)h+='<p class="note">ARIEL sta lavorando su un\'altra prova: aspetta che finisca.</p>';
+  const f3=p.f3_esito;if(f3)h+=`<div class="box" style="margin:8px 0"><b>Anello F3: ${esc(f3.esito)}</b><br><span class="note">sfc per giro [10⁻⁵ kg/(N·s)]: ${f3.sfc.map(x=>fmt(x/1e-5,3)).join(' → ')} · prove: ${f3.prove.length}</span></div>`;
+  if(p.f3)h+=`<p class="note">Giro ${p.f3.giro} dell'anello F3 partito da un'altra prova.</p>`;
+  if(!e&&!mio)h+='<p class="note">Il motore non è ancora calcolato. «Analisi semplice» progetta il motore sul velivolo e dà spinte, TSFC ed emissioni all\'equilibrio per fase (circa 15 min). «Con CRN» aggiunge la chimica a tempo finito e il ciclo LTO contro i limiti ICAO (oltre un\'ora).</p>';
   if(e&&!e.ok)h+=`<div class="box errbox">ARIEL si è fermato (${esc(e.data)}):\n${esc(e.errore)}</div>`;
-  if(e&&e.ok){const tot=n=>{const r=e.righe.find(r=>r.nome===n);return r?r.v[r.v.length-1]:null};
-    h+=`<p class="note" style="margin-top:0">Calcolati il ${esc(e.data)} in ${Math.round(e.secondi/60)} min. Equilibrio chimico = limite superiore degli NOx; P3-T3 = correlazione. Valori per motore nel gruppo Motore, per tutti i motori nelle Emissioni.</p>
-    <div class="kpis" style="margin-bottom:14px">${EMK.map(([n,l,u,d,div])=>{const x=tot(n);return `<div class="kpi"><div class="l">${l}, missione</div><div class="v">${fmt(x==null?null:x/(div||1),d)}<small>${u}</small></div></div>`}).join('')}</div>
-    <table><tr><th></th>${e.fasi.map(f=>`<th style="white-space:normal;min-width:70px">${esc(FASI[f]||f)}</th>`).join('')}</tr>`;
-    let g='';for(const r of e.righe){if(r.gruppo!==g){g=r.gruppo;h+=`<tr><th colspan="${e.fasi.length+1}" style="text-align:left">${esc(g)}</th></tr>`}
+  if(e&&e.ok){const g=(M.candidati.find(c=>c.id===p.id)||{}).grandezze||{},c=e.carta||{},l=e.lto;
+    const sfc=p.valori['flight_expected_performances/sfc [(kg/s)/N]'],tot=n=>{const r=e.righe.find(r=>r.nome===n);return r?r.v[r.v.length-1]:null};
+    const ver=(ok,t)=>`<div>${ok===true?'✅':ok===false?'❌':'⚠'} ${t}</div>`;
+    h+=`<div class="box" style="margin:8px 0">${[
+      c.TSFC?ver(Math.abs(c.TSFC-sfc)<0.01*sfc||null,`TSFC del motore ${fmt(c.TSFC/1e-5,3)} contro sfc data ${fmt(sfc/1e-5,3)} ·10⁻⁵ kg/(N·s) (${c.TSFC<sfc?'':'+'}${fmt((c.TSFC/sfc-1)*100,1)} %)${Math.abs(c.TSFC-sfc)<0.01*sfc?' · coerente':' · serve l’anello F3'}`):'',
+      ver(g.spinta_decollo==null?null:g.spinta_decollo>=1,`Spinta al decollo ${fmt(g.F00??g.Fn_decollo,0)} kN ${g.F00?'(statica, CRN)':'(segmento di decollo)'} contro ${fmt(g.T_richiesta,0)} kN richiesti: ${fmt((g.spinta_decollo||0)*100,0)} %`),
+      l?ver(l.NOx_gkN<=l.NOx_limite&&l.SN<=l.SN_limite,`LTO contro ICAO: NOx ${fmt(l.NOx_gkN,1)}/${fmt(l.NOx_limite,1)} g/kN, CO ${fmt(l.CO_gkN,1)}/${fmt(l.CO_limite,1)}, HC ${fmt(l.HC_gkN,2)}/${fmt(l.HC_limite,1)}, fumo SN ${fmt(l.SN,1)}/${fmt(l.SN_limite,1)}${l.parziale?' · ciclo LTO parziale':''}`):ver(null,'LTO contro i limiti ICAO: serve la CRN')].join('')}</div>`;
+    if(c.BPR!=null)h+=`<h3>Carta d'identità</h3><div class="kpis" style="margin-bottom:14px">${[['BPR',c.BPR,'',2],['OPR',c.OPR,'',1],['Tt4',c.Tt4,'K',0],['Fan',c.fan,'m',3],['Portata d\'aria',c.portata,'kg/s',1],['Spinta in crociera',c.Fn_crociera,'kN',1],['Punto di progetto',null,'M '+fv(c.mach)+' · '+fmt(c.quota/1000,1)+' km',0],['Combustibile',null,c.combustibile||'—',0]].map(([n,x,u,d])=>`<div class="kpi"><div class="l">${n}</div><div class="v" style="${x==null?'font-size:15px':''}">${x==null?esc(u):fmt(x,d)+(u?`<small>${u}</small>`:'')}</div></div>`).join('')}</div>
+      ${(c.vincoli||[]).length?`<p class="note">Vincoli dell'ottimizzatore: ${c.vincoli.map(v=>`${esc(v.nome)} ${fmt(v.valore,3)}${v.limite!=null?' (max '+fv(v.limite)+')':''} ${esc(v.stato)}`).join(' · ')}</p>`:''}`;
+    h+=`<p class="note">Calcolato il ${esc(e.data)}${e.secondi?' in '+Math.round(e.secondi/60)+' min':''} · ${e.tipo==='crn'?'con CRN':'analisi semplice (senza CRN)'}${e.riusato_da?' · riusato dalla prova '+esc(e.riusato_da):''}. Equilibrio chimico = limite superiore degli NOx; P3-T3 = correlazione.</p>
+    <div class="kpis" style="margin-bottom:14px">${EMK.map(([n,lb,u,d,div])=>{const x=tot(n);return `<div class="kpi"><div class="l">${lb}, missione</div><div class="v">${fmt(x==null?null:x/(div||1),d)}<small>${u}</small></div></div>`}).join('')}</div>
+    <div style="overflow-x:auto"><table><tr><th></th>${e.fasi.map(f=>`<th style="white-space:normal;min-width:70px">${esc(FASI[f]||f)}</th>`).join('')}</tr>`;
+    let gr='';for(const r of e.righe){if(r.gruppo!==gr){gr=r.gruppo;h+=`<tr><th colspan="${e.fasi.length+1}" style="text-align:left">${esc(gr)}</th></tr>`}
       const brutto=r.nome.startsWith('P3-T3 fuori')?'Yes':'No',sn=x=>`<span style="${x===brutto?'color:var(--warn);font-weight:650':''}">${x==='Yes'?'sì':'no'}</span>`;
       h+=`<tr><td>${esc(r.nome)}${r.u?' ['+esc(r.u)+']':''}</td>${r.v.map((x,i)=>`<td style="${i===r.v.length-1?'font-weight:650':''}">${x==='Yes'||x==='No'?sn(x):fmt(x,r.d)}</td>`).join('')}</tr>`}
-    h+='</table><p class="note">File completo: outputs/Layer1/Engine_and_emissions.xlsx nella cartella della prova (fogli Segments, Engine, Notes).</p>'}
+    h+='</table></div>';
+    if(l&&l.grafico)h+=`<div class="imgs" style="margin-top:12px"><figure><img src="/prove/${encodeURIComponent(p.id)}/outputs/${l.grafico.split('/').map(encodeURIComponent).join('/')}" alt="LTO contro limiti ICAO"><figcaption>Ciclo LTO contro i limiti ICAO (CRN)</figcaption></figure></div>`;
+    h+='<p class="note">File completi nella cartella della prova: outputs/Layer1/Engine_and_emissions.xlsx e outputs/_work/Layer1/crn_case/.</p>'}
   b.innerHTML=h}
 $('#embox').addEventListener('change',e=>{if(e.target.id==='emsel'&&e.target.value){SEL=e.target.value;prova()}});
-$('#embox').addEventListener('click',async e=>{if(e.target.id!=='emgo'||!SEL)return;
-  if(!confirm('Calcolare motore ed emissioni di questa prova? Dura da decine di minuti a più di un\'ora e nel frattempo ARIEL non fa altri calcoli.'))return;
-  const r=await api('/api/prova/'+encodeURIComponent(SEL)+'/emissioni',{});if(r.errore)alert(r.errore);carica()});
+$('#embox').addEventListener('click',async e=>{const go=e.target.dataset.go;if(!go||!SEL)return;
+  const msg={semplice:'Analisi semplice del motore (circa 15 min, senza CRN)?',crn:'Motore con CRN (oltre un\'ora)?',f3:'Anello F3: sfc ← TSFC del motore, nuovo velivolo e nuovo motore, fino a 5 giri da circa 15 min ciascuno?'}[go];
+  if(!confirm(msg+' Nel frattempo ARIEL non fa altri calcoli.'))return;
+  const r=go==='f3'?await api('/api/prova/'+encodeURIComponent(SEL)+'/f3',{}):await api('/api/prova/'+encodeURIComponent(SEL)+'/emissioni',{tipo:go});if(r.errore)alert(r.errore);carica()});
 document.addEventListener('click',e=>{if(e.target.matches('.imgs img')){const d=document.createElement('div');d.className='lb';d.innerHTML=`<img src="${e.target.src}">`;d.onclick=()=>d.remove();document.body.append(d)}});
 function lista(){if(!S.prove.length){$('#lista').innerHTML='<tr><td class="empty">Nessuna prova salvata.</td></tr>';confronto();return}
   $('#lista').innerHTML='<tr><th></th><th class="l">Prova</th><th class="l">Nota</th><th>Data</th><th>MTOM [t]</th><th>S [m²]</th><th>T/W</th><th></th></tr>'+S.prove.map(p=>{const r=p.riepilogo;

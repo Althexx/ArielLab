@@ -341,7 +341,10 @@ class Lavoro(unittest.TestCase):
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         base = 'http://127.0.0.1:%d' % srv.server_address[1]
         try:
-            self.assertIn(b'ARIEL', urllib.request.urlopen(base + '/').read())
+            pagina = urllib.request.urlopen(base + '/').read()
+            self.assertIn(b'ARIEL', pagina)
+            for id_ in (b'id="vincoli"', b'id="confronto"', b'id="criterio"'):  # scheda Motore ed emissioni v2
+                self.assertIn(id_, pagina)
             st = json.loads(urllib.request.urlopen(base + '/api/stato').read())
             self.assertEqual(len(st['schema']), 37)
             req = urllib.request.Request(base + '/api/calcola', json.dumps({'valori': valori_validi(), 'nome': 'http', 'nota': ''}).encode(), {'Content-Type': 'application/json'})
