@@ -462,6 +462,28 @@ class Lab:
                 'progetto': {k: (p.get('riepilogo') or {}).get(k) for k in ('TW', 'attivo')},
                 'log':{'Fuel_f': float(f[-1]) if f else None, 'iterazioni': int(it.group(1)) if it else None, 'converge': bool(it)}}
 
+    def vincoli(self, nuovi=None):
+        """Vincoli del confronto dei motori (lavoro/vincoli.json); con nuovi li controlla e li salva."""
+        f = os.path.join(self.dir_lavoro, 'vincoli.json')
+        if nuovi is not None:
+            json.dump(motore.controlla_vincoli(nuovi), open(f, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        try:
+            return json.load(open(f, encoding='utf-8'))
+        except (OSError, ValueError):
+            return [dict(c) for c in motore.VINCOLI0]
+
+    def motori(self, criterio='MTOM'):
+        """Candidati = prove con motore calcolato; grandezze, vincoli, input diversi dal primo e il migliore."""
+        vin = self.vincoli()
+        pr = [p for p in self.prove() if (p.get('emissioni') or {}).get('ok')]
+        base = pr[0]['valori'] if pr else {}
+        cand = [{'id': p['id'], 'nome': p['nome'], 'data': p['data'], 'tipo': p['emissioni'].get('tipo', 'crn'),
+                 'riusato_da': p['emissioni'].get('riusato_da'), 'grandezze': motore.grandezze(p),
+                 'verifica': motore.verifica(motore.grandezze(p), vin),
+                 'diversi': {k: x for k, x in p['valori'].items() if base.get(k) != x}} for p in pr]
+        best, testo = motore.migliore(pr, vin, criterio)
+        return {'candidati': cand, 'vincoli': vin, 'criterio': criterio, 'migliore': best, 'testo': testo}
+
     def stato(self):
         pr = self.prove()
         return {'schema': self.sch, 'valori': pr[0]['valori'] if pr else self.valori0, 'note': self.note,
@@ -511,6 +533,10 @@ def server(lab, porta):
                     return self._invia(open(os.path.join(QUI, 'index.html'), encoding='utf-8').read(), 'text/html; charset=utf-8')
                 if p == '/api/stato':
                     return self._invia(lab.stato())
+                if p == '/api/vincoli':
+                    return self._invia(lab.vincoli())
+                if p == '/api/motori':
+                    return self._invia(lab.motori(parse_qs(u.query).get('criterio', ['MTOM'])[0]))
                 if p == '/api/csv':
                     ids = parse_qs(u.query).get('ids', [''])[0].split(',')
                     return self._invia(lab.csv(ids), 'text/csv; charset=utf-8', extra=[('Content-Disposition', 'attachment; filename="prove_ariel.csv"')])
@@ -529,6 +555,8 @@ def server(lab, porta):
         def do_POST(self):
             p = unquote(urlparse(self.path).path)
             try:
+                if p == '/api/vincoli':
+                    return self._invia(lab.vincoli(self._json()))
                 if p == '/api/calcola':
                     d = self._json()
                     return self._invia(lab.calcola(d['valori'], d.get('nome', ''), d.get('nota', '')))

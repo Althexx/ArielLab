@@ -132,3 +132,74 @@ def impronta(valori, db_path, exe_path):
         h.update(f.read())
     h.update(str(os.path.getsize(exe_path)).encode())
     return h.hexdigest()
+
+
+# ---------------------------------------------------------------- vincoli e candidato migliore
+VINCOLI0 = [{'id': 'spinta_decollo', 'nome': 'Spinta al decollo disponibile / richiesta', 'min': 1.0},
+            {'id': 'nox_lto', 'nome': 'NOx LTO / limite ICAO', 'max': 1.0},
+            {'id': 'fan', 'nome': 'Diametro del fan [m]', 'max': 1.25},
+            {'id': 'tt4', 'nome': 'Tt4 massimo [K]', 'max': 1500}]
+CRITERI = {'MTOM': 'MTOM', 'fuel': 'combustibile di missione', 'co2_pkm': 'CO₂ per passeggero·km', 'TSFC': 'TSFC di crociera'}
+
+
+def _riga(e, nome):
+    return next((r['v'] for r in e.get('righe') or [] if r['nome'] == nome), [])
+
+
+def grandezze(prova):
+    """Grandezze per il confronto, da prova.json (riepilogo, valori, emissioni). None dove manca il dato."""
+    e, r, v = prova.get('emissioni') or {}, prova.get('riepilogo') or {}, prova.get('valori') or {}
+    fasi, carta, lto = e.get('fasi') or [], e.get('carta') or {}, e.get('lto') or {}
+    num = lambda x: x if isinstance(x, (int, float)) and not isinstance(x, bool) else None
+    fn = _riga(e, 'Spinta netta')
+    fn_to = num(fn[fasi.index('Take-off')]) if 'Take-off' in fasi and fasi.index('Take-off') < len(fn) else None
+    tt4 = [x for x in map(num, _riga(e, 'Tt4')) if x is not None]
+    co2, fuel = _riga(e, 'CO₂'), _riga(e, 'Combustibile')
+    pax, rng = v.get('payload/passenger_number [-]'), v.get('flight_expected_performances/range [km]')
+    return {'spinta_decollo': fn_to / r['T_eng'] if fn_to and r.get('T_eng') else None,
+            'Fn_decollo': fn_to, 'T_richiesta': r.get('T_eng'),
+            'nox_lto': lto['NOx_gkN'] / lto['NOx_limite'] if lto.get('NOx_gkN') and lto.get('NOx_limite') else None,
+            'fan': carta.get('fan'), 'tt4': max(tt4) if tt4 else None,
+            'co2_pkm': num(co2[-1]) / (pax * rng) if co2 and num(co2[-1]) and pax and rng else None,
+            'fuel': num(fuel[-1]) if fuel else None, 'MTOM': r.get('MTOM'), 'TSFC': carta.get('TSFC')}
+
+
+def verifica(gr, vincoli):
+    """{id vincolo: True | False | None}; None = grandezza non disponibile (per esempio NOx LTO senza CRN)."""
+    out = {}
+    for c in vincoli:
+        x = gr.get(c['id'])
+        out[c['id']] = None if x is None else \
+            (c.get('min') is None or x >= c['min']) and (c.get('max') is None or x <= c['max'])
+    return out
+
+
+def migliore(prove, vincoli, criterio='MTOM'):
+    """(id del migliore | None, testo che spiega il criterio). Migliore = minimo del criterio tra chi non viola nessun vincolo."""
+    nomi = {c['id']: c['nome'] for c in vincoli}
+    ok = []
+    for p in prove:
+        g = grandezze(p)
+        v = verifica(g, vincoli)
+        if False not in v.values() and g.get(criterio) is not None:
+            ok.append((g[criterio], p['id'], [k for k, x in v.items() if x is None]))
+    if not ok:
+        return None, 'Nessun candidato rispetta tutti i vincoli verificabili.'
+    x, pid, non = min(ok)
+    testo = 'Minimo %s tra %d candidat%s che rispettano i vincoli.' % (CRITERI.get(criterio, criterio), len(ok), 'o' if len(ok) == 1 else 'i')
+    if non:
+        testo += ' Non verificat%s: %s (serve la CRN o il dato manca).' % ('o' if len(non) == 1 else 'i', ', '.join(nomi.get(k, k) for k in non))
+    return pid, testo
+
+
+def controlla_vincoli(vincoli):
+    """Solleva ValueError se un vincolo non ha id/nome o ha min/max non numerici."""
+    if not isinstance(vincoli, list):
+        raise ValueError('i vincoli devono essere una lista')
+    for c in vincoli:
+        if not isinstance(c, dict) or not c.get('id') or not c.get('nome'):
+            raise ValueError('vincolo senza id o nome')
+        for k in ('min', 'max'):
+            if c.get(k) is not None and (isinstance(c[k], bool) or not isinstance(c[k], (int, float))):
+                raise ValueError('%s di "%s" non e\' un numero' % (k, c['nome']))
+    return vincoli

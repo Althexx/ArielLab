@@ -220,6 +220,43 @@ class Impronta(unittest.TestCase):
         self.assertNotEqual(a, motore.impronta({'x': 1, 'y': 3.537e-05}, db, exe))
 
 
+def prova_motore(pid, MTOM, Fn_to, T_eng, crn=False, fan=1.2498, tt4=1500.0):
+    """Prova con emissioni come le salva il Lab (numeri di v0 dove non indicato)."""
+    R = 'flight_expected_performances/range [km]'
+    return {'id': pid, 'nome': pid, 'data': '', 'valori': {'payload/passenger_number [-]': 100, R: 6300, 'x': pid},
+            'riepilogo': {'ok': True, 'MTOM': MTOM, 'T_eng': T_eng},
+            'emissioni': {'ok': True, 'tipo': 'crn' if crn else 'semplice', 'fasi': ['Take-off', 'Cruise', 'Mission total'],
+                          'righe': [{'nome': 'Spinta netta', 'v': [Fn_to, 52.86, None]}, {'nome': 'Tt4', 'v': [1412.0, tt4, None]},
+                                    {'nome': 'Combustibile', 'v': [6695.0, 59367.0, 114045.0]}, {'nome': 'CO₂', 'v': [1.0, 2.0, 357809.0]}],
+                          'carta': {'fan': fan, 'TSFC': 2.798e-05},
+                          'lto': {'NOx_gkN': 93.0, 'NOx_limite': 83.2} if crn else None}}
+
+
+class Vincoli(unittest.TestCase):
+    def test_vincoli_v0(self):
+        g = motore.grandezze(prova_motore('v0', 224103, 182.18, 285.8))
+        self.assertAlmostEqual(g['spinta_decollo'], 0.6374, 4)
+        self.assertAlmostEqual(g['co2_pkm'], 357809 / (100 * 6300), 6)
+        self.assertEqual((g['fuel'], g['tt4'], g['MTOM']), (114045.0, 1500.0, 224103))
+        v = motore.verifica(g, motore.VINCOLI0)
+        self.assertEqual((v['spinta_decollo'], v['fan'], v['tt4']), (False, True, True))
+
+    def test_vincolo_senza_crn(self):
+        g = motore.grandezze(prova_motore('a', 200000, 300, 285.8))
+        self.assertIsNone(g['nox_lto']); self.assertIsNone(motore.verifica(g, motore.VINCOLI0)['nox_lto'])
+        best, testo = motore.migliore([prova_motore('a', 200000, 300, 285.8)], motore.VINCOLI0)
+        self.assertEqual(best, 'a'); self.assertIn('NOx LTO', testo); self.assertIn('CRN', testo)
+        g = motore.grandezze(prova_motore('c', 200000, 300, 285.8, crn=True))
+        self.assertAlmostEqual(g['nox_lto'], 93 / 83.2, 6); self.assertFalse(motore.verifica(g, motore.VINCOLI0)['nox_lto'])
+
+    def test_migliore_scarta_chi_viola(self):
+        a, b = prova_motore('A', 200000, 182.18, 285.8), prova_motore('B', 224000, 300, 285.8)
+        self.assertEqual(motore.migliore([a, b], motore.VINCOLI0)[0], 'B')
+        self.assertEqual(motore.migliore([a], motore.VINCOLI0)[0], None)
+        c = prova_motore('C', 210000, 300, 285.8)
+        self.assertEqual(motore.migliore([a, b, c], motore.VINCOLI0, 'MTOM')[0], 'C')
+
+
 class Lavoro(unittest.TestCase):
     """ARIEL finto acceso una volta sola, due calcoli di fila; prove salvate; server HTTP."""
     @classmethod
@@ -454,6 +491,27 @@ class Lavoro(unittest.TestCase):
         self.assertEqual(e['tipo'], 'crn')
         self.assertTrue(os.path.isfile(os.path.join(self.lab.dir_prove, p['id'], 'outputs', '_work', 'Layer1', 'crn_case',
                                                     '4_crn_emissions', 'results', 'crn_emissions_results.xlsx')))
+
+
+    def test_15_vincoli_e_motori_server(self):
+        srv = app.server(self.lab, 0)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = 'http://127.0.0.1:%d' % srv.server_address[1]
+        post = lambda u, d: urllib.request.urlopen(urllib.request.Request(base + u, json.dumps(d).encode(), {'Content-Type': 'application/json'}))
+        try:
+            self.assertEqual(json.loads(urllib.request.urlopen(base + '/api/vincoli').read())[0]['id'], 'spinta_decollo')
+            with self.assertRaises(urllib.error.HTTPError) as c:
+                post('/api/vincoli', [{'id': 'fan', 'nome': 'Fan', 'max': 'tanto'}])
+            self.assertEqual(c.exception.code, 400)
+            nuovi = [dict(x) for x in motore.VINCOLI0]; nuovi[2]['max'] = 1.3
+            post('/api/vincoli', nuovi)
+            self.assertEqual(json.loads(urllib.request.urlopen(base + '/api/vincoli').read())[2]['max'], 1.3)
+            m = json.loads(urllib.request.urlopen(base + '/api/motori?criterio=MTOM').read())
+            self.assertIn('migliore', m); self.assertIn('testo', m)
+            self.assertTrue(all('verifica' in x and 'grandezze' in x and 'diversi' in x for x in m['candidati']))
+            self.assertTrue(m['candidati'])
+        finally:
+            srv.shutdown()
 
 
 if __name__ == '__main__':
