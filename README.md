@@ -23,10 +23,21 @@ Serve la release di ARIEL-SST del 27/10/2026, quella del corso. **L'eseguibile n
 - Al primo avvio la dashboard copia in `lavoro\inputs` gli input di partenza da `inputs_iniziali`. Sono gli input del pacchetto del corso, non modificati, e il database statistico del team.
 - Il primo calcolo dura circa 20 s in più, perché ARIEL si avvia; poi 5–15 s per calcolo. Ogni calcolo viene salvato in `prove`.
 - Al primo avvio Windows può bloccare ARIEL-SST.exe con "Windows ha protetto il PC": clicca "Ulteriori informazioni" e poi "Esegui comunque".
-- **Motore ed emissioni.** Nella scheda "Motore ed emissioni" si sceglie una prova che converge. Il pulsante "Calcola motore ed emissioni" lancia l'opzione 3 di ARIEL sul velivolo di quella prova. ARIEL progetta il motore e calcola, fase per fase, combustibile, stato della camera di combustione, indici di emissione e kg di CO₂, H₂O, NOx e CO.
-  - Il calcolo dura da decine di minuti a più di un'ora: il motore richiede circa 15 minuti, poi c'è la rete di reattori (CRN). Nel frattempo non si possono fare altri calcoli.
-  - Non chiudere la finestra nera e non sospendere il PC.
-  - I risultati restano nella prova: `outputs\Layer1\Engine_and_emissions.xlsx`, `outputs\Layer1\CRN_emissions\` e `log_emissioni.txt`.
+- **Motore ed emissioni.** La scheda ha due parti.
+  - **Confronto dei motori**, in alto. Ogni colonna è una prova con il motore calcolato, cioè un velivolo con il suo motore.
+    - Per ogni vincolo la pagina mostra ✅, ❌ oppure «—» se il dato non è verificabile. I vincoli sono: spinta al decollo, NOx e fumo LTO contro i limiti ICAO, diametro del fan, Tt4.
+    - Il **migliore** è evidenziato: tra i candidati che rispettano i vincoli, ha il valore più basso della grandezza scelta (MTOM, combustibile, CO₂ per passeggero·km o TSFC).
+    - I vincoli si cambiano in «Vincoli» e restano salvati in `lavoro\vincoli.json`.
+  - **Profilo del motore**, in basso, per la prova scelta:
+    - verdetto, carta d'identità del motore e tabella per fase;
+    - con la CRN, anche il ciclo LTO contro i limiti ICAO.
+  - **Tre pulsanti:**
+    - **Analisi semplice**, circa 15 min: lancia l'opzione 3 e ferma l'exe appena il motore è progettato, senza la rete di reattori (CRN).
+    - **Con CRN**, oltre un'ora: opzione 3 completa.
+    - **Anello F3**: mette sfc = TSFC del motore, ricalcola il velivolo e il motore, e ripete finché la sfc cambia meno dell'1 % (al massimo 5 giri). Ogni giro diventa una prova nuova. Nel confronto compare solo l'ultimo giro.
+  - **Niente calcoli doppi:** i risultati vanno in `lavoro\archivio\`, sotto un'impronta degli ingressi (input, database ed exe). Una prova con ingressi identici li riusa senza lanciare l'exe.
+  - Durante un calcolo non si possono fare altri calcoli. Non chiudere la finestra nera e non sospendere il PC.
+  - I risultati restano nella prova: `outputs\Layer1\Engine_and_emissions.xlsx`, `outputs\_work\Layer1\crn_case\` e `log_emissioni.txt`.
 
 ## Se qualcosa non va
 - **"ARIEL-SST.exe non trovato":** manca l'eseguibile in `lavoro\`.
