@@ -1,5 +1,5 @@
 """Finto ARIEL-SST per i test: stesso menu, legge inputs/HLInputs.yaml, scrive outputs/ copiando un esempio vero."""
-import os, shutil, sys, yaml
+import os, shutil, sys, time, yaml
 
 ESEMPIO = sys.argv[1]  # cartella con outputs/ e log_ok.txt di una prova vera
 MENU = "  1  Full run\n  2  Aircraft design only\n  3  Engine only\n  4  Exit\nSelect an option [1-4]: "
@@ -22,6 +22,14 @@ def motore():
         print('Error: engine on-design optimisation found no feasible design')
         return
     shutil.copy2(os.path.join(ESEMPIO, 'Engine_and_emissions.xlsx'), os.path.join('outputs', 'Layer1'))
+    if os.environ.get('FAKE_MFTF'):  # file del motore generato dai test
+        d = os.path.join('outputs', '_work', 'Layer1', 'crn_case', '0_interface'); os.makedirs(d, exist_ok=True)
+        shutil.copy2(os.environ['FAKE_MFTF'], d)
+    if os.path.isfile('fake_crn_sec.txt'):  # la CRN: dura qualche secondo, poi scrive i suoi risultati
+        print('CRN running...', flush=True)
+        time.sleep(float(open('fake_crn_sec.txt').read()))
+        d = os.path.join('outputs', '_work', 'Layer1', 'crn_case', '4_crn_emissions', 'results'); os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, 'crn_emissions_results.xlsx'), 'wb').write(b'crn')
     print('Engine and emissions done')
 
 while True:

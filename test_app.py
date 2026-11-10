@@ -1,5 +1,5 @@
 """Test della dashboard ARIEL: python -m unittest ariel_dashboard/test_app.py (dalla cartella del progetto)."""
-import json, os, shutil, sys, tempfile, threading, unittest, urllib.request
+import json, os, shutil, sys, tempfile, threading, time, unittest, urllib.request
 import yaml
 
 QUI = os.path.dirname(os.path.abspath(__file__))
@@ -227,7 +227,10 @@ class Lavoro(unittest.TestCase):
         cls.dir = tempfile.mkdtemp()
         os.makedirs(os.path.join(cls.dir, 'lavoro', 'inputs'))
         open(os.path.join(cls.dir, 'lavoro', 'inputs', 'StatDatabase.xlsx'), 'w').close()
+        mf = motore_v0(os.path.join(cls.dir, 'fixture'))  # il finto ARIEL copia questo mftf_engine_design.xlsx
+        os.environ['FAKE_MFTF'] = os.path.join(mf, motore.FILE_MOTORE[1])
         cls.ariel = app.Ariel([sys.executable, '-u', os.path.join(QUI, 'fake_ariel.py'), DATI], os.path.join(cls.dir, 'lavoro'))
+        cls.ariel.stabile = 0.5  # secondi in cui i file del motore non devono cambiare (exe vero: 5)
         cls.lab = app.Lab(TEMPLATE, cls.ariel, os.path.join(cls.dir, 'lavoro'), os.path.join(cls.dir, 'prove'), valori_validi())
 
     @classmethod
@@ -413,6 +416,44 @@ class Lavoro(unittest.TestCase):
         q = self.lab.calcola(v, 'tipo 2', '')
         self.assertIsNone(self.lab.dal_archivio(q['id'], 'crn'))
         self.assertEqual(self.lab.dal_archivio(q['id'], 'semplice')['riusato_da'], p['id'])
+
+
+    def _crn(self, sec):
+        f = os.path.join(self.lab.dir_lavoro, 'fake_crn_sec.txt')
+        if sec is None:
+            os.path.isfile(f) and os.remove(f)
+        else:
+            open(f, 'w').write(str(sec))
+
+    def test_13_semplice_si_ferma_prima_della_crn(self):
+        v = valori_validi(); v['crew/crew_number [-]'] = 9
+        p = self.lab.calcola(v, 'semplice', '')
+        self._crn(60)
+        try:
+            t0 = time.time(); self.lab.emissioni(p['id'], 'semplice').join(60)
+            self.assertLess(time.time() - t0, 30)
+        finally:
+            self._crn(None)
+        e = self.lab.prova(p['id'])['emissioni']
+        self.assertTrue(e['ok'], e); self.assertEqual(e['tipo'], 'semplice')
+        self.assertAlmostEqual(e['carta']['TSFC'], 2.798034e-05, 10)  # dal mftf della fixture (Engine e' del pacchetto)
+        d = os.path.join(self.lab.dir_prove, p['id'], 'outputs', '_work', 'Layer1', 'crn_case')
+        self.assertTrue(os.path.isfile(os.path.join(d, '0_interface', 'mftf_engine_design.xlsx')))
+        self.assertFalse(os.path.exists(os.path.join(d, '4_crn_emissions')))
+        self.assertTrue(self.lab.calcola(valori_validi(), 'dopo', '')['riepilogo']['ok'])  # exe riavviato
+
+    def test_14_crn_completa(self):
+        v = valori_validi(); v['crew/crew_number [-]'] = 10
+        p = self.lab.calcola(v, 'crn', '')
+        self._crn(1)
+        try:
+            self.lab.emissioni(p['id'], 'crn').join(60)
+        finally:
+            self._crn(None)
+        e = self.lab.prova(p['id'])['emissioni']
+        self.assertEqual(e['tipo'], 'crn')
+        self.assertTrue(os.path.isfile(os.path.join(self.lab.dir_prove, p['id'], 'outputs', '_work', 'Layer1', 'crn_case',
+                                                    '4_crn_emissions', 'results', 'crn_emissions_results.xlsx')))
 
 
 if __name__ == '__main__':

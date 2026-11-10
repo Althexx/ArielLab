@@ -191,6 +191,7 @@ class Ariel:
     """ARIEL-SST con stdin/stdout rediretti: resta acceso, ogni calcolo = '2' (o '3') e attesa del menu."""
     def __init__(self, cmd, cwd):
         self.cmd, self.cwd, self.proc, self.buf, self.lock = cmd, cwd, None, bytearray(), threading.Lock()
+        self.stabile = 5  # analisi semplice: secondi in cui i file del motore non devono cambiare prima di fermare l'exe
 
     def _leggi(self, p):
         while True:
@@ -240,6 +241,33 @@ class Ariel:
                 self.chiudi()
                 log += '\n[dashboard] Error: ARIEL non ha risposto entro %d s; verra\' riavviato' % sec
             return log
+
+    def calcola_fino_a(self, file, sec, opzione=b'3'):
+        """Come calcola(), ma appena tutti i file (percorso, foglio) esistono, non cambiano per self.stabile secondi
+        e si leggono, ferma l'exe (salta il resto dell'opzione, cioe' la CRN). Se l'exe finisce prima, e' un calcolo normale."""
+        with self.lock:
+            if self.proc is None or self.proc.poll() is not None or not self._attendi(1, 120):
+                self.chiudi()
+                if not self.avvia():
+                    log = self.buf.decode('utf-8', 'replace'); self.chiudi()
+                    return log + "\n[dashboard] Error: ARIEL non si e' avviato"
+            n, da = self.buf.count(PROMPT), len(self.buf)
+            self.proc.stdin.write(opzione + b'\n'); self.proc.stdin.flush()
+            fine, dim = time.time() + sec, {}
+            while time.time() < fine:
+                if self.buf.count(PROMPT) > n or self.proc.poll() is not None:  # finito da solo (anche con errore)
+                    return self.buf[da:].decode('utf-8', 'replace')
+                ora = [os.path.getsize(f) if os.path.isfile(f) else None for f, _ in file]
+                if None not in ora:
+                    if dim.get('d') != ora:
+                        dim = {'d': ora, 't': time.time()}
+                    elif time.time() - dim['t'] >= self.stabile and all(_xlsx(f, s) for f, s in file):
+                        log = self.buf[da:].decode('utf-8', 'replace')
+                        self.chiudi()
+                        return log + '\n[dashboard] ARIEL fermato dopo il motore: CRN non calcolata (analisi semplice)'
+                time.sleep(0.2)
+            log = self.buf[da:].decode('utf-8', 'replace'); self.chiudi()
+            return log + "\n[dashboard] Error: ARIEL non ha risposto entro %d s; verra' riavviato" % sec
 
     def chiudi(self):
         p, self.proc = self.proc, None
@@ -356,55 +384,67 @@ class Lab:
         json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         return e
 
-    def emissioni(self, pid, sec=6 * 3600):
+    def emissioni(self, pid, tipo='semplice', sec=6 * 3600):
         """Avvia in un thread l'opzione 3 di ARIEL (motore ed emissioni) sul velivolo della prova.
+        tipo 'semplice': l'exe si ferma dopo il motore, senza CRN (~13 min); 'crn': opzione 3 completa (oltre 1 h).
         Se lo stesso calcolo e' gia' nell'archivio lo riusa e restituisce None (nessun thread)."""
+        if tipo not in ('semplice', 'crn'):
+            raise ValueError('tipo di calcolo sconosciuto: %s' % tipo)
         if self.job:
-            raise ValueError('ARIEL sta gia\' calcolando motore ed emissioni')
+            raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
         if not self.prova(pid)['riepilogo'].get('ok'):
-            raise ValueError('la prova non converge: non c\'e\' un velivolo su cui progettare il motore')
-        if self.dal_archivio(pid, 'crn'):
+            raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
+        if self.dal_archivio(pid, tipo):
             return None
-        self.job = {'id': pid, 'inizio': time.time()}
-        t = threading.Thread(target=self._emissioni, args=(pid, sec), daemon=True)
+        self.job = {'id': pid, 'inizio': time.time(), 'tipo': tipo}
+        t = threading.Thread(target=self._emissioni, args=(pid, tipo, sec), daemon=True)
         t.start()
         return t
 
-    def _emissioni(self, pid, sec):
+    def _emissioni(self, pid, tipo, sec):
         try:
-            d, out = self._p(pid), os.path.join(self.dir_lavoro, 'outputs')
-            # l'opzione 3 parte dall'ultimo velivolo calcolato: si rimette in lavoro/ quello della prova
-            shutil.copy2(os.path.join(d, 'HLInputs.yaml'), os.path.join(self.dir_lavoro, 'inputs', 'HLInputs.yaml'))
-            if os.path.isdir(out):
-                shutil.rmtree(out)
-            shutil.copytree(os.path.join(d, 'outputs'), out)
-            for vecchio in ('Engine_and_emissions.xlsx', 'CRN_emissions'):  # risultati di un giro precedente
-                f = os.path.join(out, 'Layer1', vecchio)
-                if os.path.isdir(f):
-                    shutil.rmtree(f)
-                elif os.path.isfile(f):
-                    os.remove(f)
-            t0 = time.time()
-            log = self.ariel.calcola(sec, b'3')
-            open(os.path.join(d, 'log_emissioni.txt'), 'w', encoding='utf-8').write(log)
-            e = emissioni(out)
-            if e:
-                shutil.copytree(out, os.path.join(d, 'outputs'), dirs_exist_ok=True)
-                e.update(ok=True)
-            else:
-                err = [r for r in log.splitlines() if 'error' in r.lower()]
-                e = {'ok': False, 'errore': '\n'.join(err[:10]) or 'ARIEL non ha scritto Engine_and_emissions.xlsx'}
-            e.update(secondi=round(time.time() - t0), data=datetime.now().strftime('%d/%m/%Y %H:%M'), tipo='crn',
-                     impronta=self.impronta(pid))
-            p = self.prova(pid)  # riletta: nome e nota possono essere cambiati durante il calcolo
-            p['emissioni'] = e
-            json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-            if e['ok']:
-                self._salva_archivio(pid, e)
+            self._motore(pid, tipo, sec)
         except (OSError, KeyError, ValueError):
             pass  # prova cancellata durante il calcolo
         finally:
             self.job = None
+
+    def _motore(self, pid, tipo, sec=6 * 3600):
+        """Opzione 3 sulla prova, sincrona: salva prova.json['emissioni'] e l'archivio; restituisce le emissioni."""
+        d, out = self._p(pid), os.path.join(self.dir_lavoro, 'outputs')
+        # l'opzione 3 parte dall'ultimo velivolo calcolato: si rimette in lavoro/ quello della prova
+        shutil.copy2(os.path.join(d, 'HLInputs.yaml'), os.path.join(self.dir_lavoro, 'inputs', 'HLInputs.yaml'))
+        if os.path.isdir(out):
+            shutil.rmtree(out)
+        shutil.copytree(os.path.join(d, 'outputs'), out)
+        for vecchio in ('Layer1/Engine_and_emissions.xlsx', 'Layer1/CRN_emissions', '_work/Layer1/crn_case'):  # giro precedente
+            f = os.path.join(out, vecchio)
+            if os.path.isdir(f):
+                shutil.rmtree(f)
+            elif os.path.isfile(f):
+                os.remove(f)
+        t0 = time.time()
+        if tipo == 'semplice':
+            log = self.ariel.calcola_fino_a([(os.path.join(out, motore.FILE_MOTORE[0]), 'Segments'),
+                                             (os.path.join(out, motore.FILE_MOTORE[1]), 'All Variables')], sec)
+        else:
+            log = self.ariel.calcola(sec, b'3')
+        open(os.path.join(d, 'log_emissioni.txt'), 'w', encoding='utf-8').write(log)
+        e = emissioni(out)
+        if e:
+            shutil.copytree(out, os.path.join(d, 'outputs'), dirs_exist_ok=True)
+            e.update(ok=True, carta=motore.carta(out))
+        else:
+            err = [r for r in log.splitlines() if 'error' in r.lower()]
+            e = {'ok': False, 'errore': '\n'.join(err[:10]) or 'ARIEL non ha scritto Engine_and_emissions.xlsx'}
+        e.update(secondi=round(time.time() - t0), data=datetime.now().strftime('%d/%m/%Y %H:%M'), tipo=tipo,
+                 impronta=self.impronta(pid))
+        p = self.prova(pid)  # riletta: nome e nota possono essere cambiati durante il calcolo
+        p['emissioni'] = e
+        json.dump(p, open(os.path.join(d, 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        if e['ok']:
+            self._salva_archivio(pid, e)
+        return e
 
     def esporta(self, pid):
         """Una prova nel formato che legge la Control Room (formato 1)."""
@@ -494,7 +534,7 @@ def server(lab, porta):
                     return self._invia(lab.calcola(d['valori'], d.get('nome', ''), d.get('nota', '')))
                 m = re.fullmatch(r'/api/prova/([\w.\-]+)(/cancella|/emissioni)?', p)
                 if m and m.group(2) == '/emissioni':
-                    lab.emissioni(m.group(1)); return self._invia({'ok': True})
+                    lab.emissioni(m.group(1), self._json().get('tipo', 'semplice')); return self._invia({'ok': True})
                 if m and m.group(2):
                     if lab.job and lab.job['id'] == m.group(1):
                         raise ValueError('ARIEL sta calcolando motore ed emissioni di questa prova')
