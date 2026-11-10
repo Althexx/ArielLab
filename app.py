@@ -292,9 +292,9 @@ class Lab:
             raise KeyError(pid)
         return os.path.join(self.dir_prove, pid)
 
-    def calcola(self, valori, nome, nota):
+    def calcola(self, valori, nome, nota, forza=False):
         err = controlla(valori, self.sch)
-        if self.job:  # l'opzione 3 usa gli input e gli output della cartella di lavoro
+        if self.job and not forza:  # l'opzione 3 usa gli input e gli output della cartella di lavoro (forza: l'anello F3)
             err = ['ARIEL sta calcolando motore ed emissioni: aspetta che finisca.']
         if err:
             return {'id': None, 'nome': nome, 'valori': valori, 'riepilogo': {'ok': False, 'errore': '\n'.join(err)}}
@@ -462,6 +462,54 @@ class Lab:
                 'progetto': {k: (p.get('riepilogo') or {}).get(k) for k in ('TW', 'attivo')},
                 'log':{'Fuel_f': float(f[-1]) if f else None, 'iterazioni': int(it.group(1)) if it else None, 'converge': bool(it)}}
 
+    SFC = 'flight_expected_performances/sfc [(kg/s)/N]'
+
+    def f3(self, pid, giri=5, tol=0.01):
+        """Anello F3 in un thread: sfc <- TSFC di progetto del motore, nuovo velivolo (opzione 2), motore (analisi semplice),
+        finche' la sfc cambia meno di tol. Ogni giro e' una prova nuova; l'esito va in prova.json['f3_esito'] della prova di partenza."""
+        if self.job:
+            raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
+        if not self.prova(pid)['riepilogo'].get('ok'):
+            raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
+        self.job = {'id': pid, 'inizio': time.time(), 'tipo': 'f3', 'f3': {'giro': 0, 'sfc': []}}
+        t = threading.Thread(target=self._f3, args=(pid, giri, tol), daemon=True)
+        t.start()
+        return t
+
+    def _f3(self, pid0, giri, tol):
+        storia = {'esito': None, 'sfc': [], 'prove': [pid0]}
+        try:
+            cur = pid0
+            for k in range(giri + 1):
+                p = self.prova(cur)
+                e = p.get('emissioni') if (p.get('emissioni') or {}).get('ok') else \
+                    (self.dal_archivio(cur, 'semplice') or self._motore(cur, 'semplice'))
+                if not e.get('ok'):
+                    storia['esito'] = 'fermato: motore non calcolato (%s)' % e.get('errore', '?'); break
+                sfc, tsfc = p['valori'][self.SFC], motore.tsfc_si(os.path.join(self._p(cur), 'outputs'))
+                storia['sfc'] = (storia['sfc'] or [sfc]) + [tsfc]
+                self.job['f3'] = {'giro': k, 'sfc': storia['sfc']}
+                if abs(tsfc - sfc) < tol * sfc:
+                    storia['sfc'].pop(); storia['esito'] = 'converge'; break
+                if k == giri:
+                    storia['esito'] = 'non converge dopo %d giri' % giri; break
+                nuovo = self.calcola(dict(p['valori'], **{self.SFC: tsfc}), '%s F3-%d' % (self.prova(pid0)['nome'], k + 1),
+                                     'anello F3 da %s, giro %d' % (pid0, k + 1), forza=True)
+                if not nuovo['riepilogo'].get('ok'):
+                    storia['esito'] = 'fermato: il velivolo non converge (%s)' % nuovo['riepilogo'].get('errore', '?'); break
+                nuovo['f3'] = {'padre': pid0, 'giro': k + 1}
+                json.dump(nuovo, open(os.path.join(self._p(nuovo['id']), 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+                storia['prove'].append(nuovo['id']); cur = nuovo['id']
+        except (OSError, KeyError, ValueError) as x:  # prova cancellata, file del motore incoerente...
+            storia['esito'] = 'fermato: %s' % x
+        finally:
+            try:
+                p = self.prova(pid0); p['f3_esito'] = storia
+                json.dump(p, open(os.path.join(self._p(pid0), 'prova.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+            except (OSError, KeyError, ValueError):
+                pass  # la prova di partenza e' stata cancellata
+            self.job = None
+
     def vincoli(self, nuovi=None):
         """Vincoli del confronto dei motori (lavoro/vincoli.json); con nuovi li controlla e li salva."""
         f = os.path.join(self.dir_lavoro, 'vincoli.json')
@@ -476,6 +524,13 @@ class Lab:
         """Candidati = prove con motore calcolato; grandezze, vincoli, input diversi dal primo e il migliore."""
         vin = self.vincoli()
         pr = [p for p in self.prove() if (p.get('emissioni') or {}).get('ok')]
+        ultimo = {}  # anello F3: di ogni famiglia (prova di partenza + giri) resta solo il giro piu' alto
+        for p in pr:
+            fam, giro = (p.get('f3') or {}).get('padre', p['id']), (p.get('f3') or {}).get('giro', 0)
+            if fam not in ultimo or giro > ultimo[fam][0]:
+                ultimo[fam] = (giro, p['id'])
+        tieni = {i for _, i in ultimo.values()}
+        pr = [p for p in pr if p['id'] in tieni]
         base = pr[0]['valori'] if pr else {}
         cand = [{'id': p['id'], 'nome': p['nome'], 'data': p['data'], 'tipo': p['emissioni'].get('tipo', 'crn'),
                  'riusato_da': p['emissioni'].get('riusato_da'), 'grandezze': motore.grandezze(p),
@@ -560,7 +615,9 @@ def server(lab, porta):
                 if p == '/api/calcola':
                     d = self._json()
                     return self._invia(lab.calcola(d['valori'], d.get('nome', ''), d.get('nota', '')))
-                m = re.fullmatch(r'/api/prova/([\w.\-]+)(/cancella|/emissioni)?', p)
+                m = re.fullmatch(r'/api/prova/([\w.\-]+)(/cancella|/emissioni|/f3)?', p)
+                if m and m.group(2) == '/f3':
+                    lab.f3(m.group(1)); return self._invia({'ok': True})
                 if m and m.group(2) == '/emissioni':
                     lab.emissioni(m.group(1), self._json().get('tipo', 'semplice')); return self._invia({'ok': True})
                 if m and m.group(2):

@@ -162,18 +162,19 @@ def scrivi_xlsx(path, fogli):
                        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>' % rr)
 
 
+TSFC_DATI = 27.48175942267465e-6  # TSFC del foglio Engine di test_dati, in kg/(N s)
 ENGINE_V0 = [['Engine designed by the on-design model'], [], ['Design point: Mach [-]', 1.8], ['Design point: altitude [m]', 16000],
              ['Design point: required thrust per engine [kN]', 52.859], ['Number of engines [-]', 4],
              ['Bypass ratio BPR [-]', 0.2182], ['Overall pressure ratio OPR [-]', 17.71], ['Turbine inlet temperature Tt4 [K]', 1500],
              ['Fan diameter [m]', 1.2498], ['Air mass flow per engine [kg/s]', 94.75], ['TSFC at the design point [g/(kN·s)]', 27.98034]]
 
 
-def motore_v0(d, tsfc_engine=27.98034):
+def motore_v0(d, tsfc_engine=27.98034, tsfc_mftf=2.798034e-05):
     """Cartella outputs/ con i due file del motore, numeri di v0 (10/11)."""
     eng = [r if not r or not str(r[0]).startswith('TSFC') else [r[0], tsfc_engine] for r in ENGINE_V0]
     scrivi_xlsx(os.path.join(d, 'Layer1', 'Engine_and_emissions.xlsx'), {'Segments': [['', 'Take-off']], 'Engine': eng, 'Notes': [[]]})
     scrivi_xlsx(os.path.join(d, '_work', 'Layer1', 'crn_case', '0_interface', 'mftf_engine_design.xlsx'), {
-        'All Variables': [['Parameter', 'Value', 'Unit'], ['Objective 1: TSFC', 2.798034e-05, 'kg/(N.s)']],
+        'All Variables': [['Parameter', 'Value', 'Unit'], ['Objective 1: TSFC', tsfc_mftf, 'kg/(N.s)']],
         'Constraints': [['Constraint', 'Value', 'Lower limit', 'Upper limit', 'Status', 'Source'],
                         ['D_fan (fan tip, matched) [m]', 1.2498, '-', 1.25, 'OK', 'installation limit']],
         'Combustion Chamber': [['Parameter', 'Value', 'Unit'], ['fuel species', 'POSF10325', '-']]})
@@ -264,7 +265,8 @@ class Lavoro(unittest.TestCase):
         cls.dir = tempfile.mkdtemp()
         os.makedirs(os.path.join(cls.dir, 'lavoro', 'inputs'))
         open(os.path.join(cls.dir, 'lavoro', 'inputs', 'StatDatabase.xlsx'), 'w').close()
-        mf = motore_v0(os.path.join(cls.dir, 'fixture'))  # il finto ARIEL copia questo mftf_engine_design.xlsx
+        # il finto ARIEL copia questo mftf_engine_design.xlsx; TSFC coerente con il foglio Engine di test_dati (27.4818 g/(kN s))
+        mf = motore_v0(os.path.join(cls.dir, 'fixture'), tsfc_mftf=TSFC_DATI)
         os.environ['FAKE_MFTF'] = os.path.join(mf, motore.FILE_MOTORE[1])
         cls.ariel = app.Ariel([sys.executable, '-u', os.path.join(QUI, 'fake_ariel.py'), DATI], os.path.join(cls.dir, 'lavoro'))
         cls.ariel.stabile = 0.5  # secondi in cui i file del motore non devono cambiare (exe vero: 5)
@@ -473,7 +475,7 @@ class Lavoro(unittest.TestCase):
             self._crn(None)
         e = self.lab.prova(p['id'])['emissioni']
         self.assertTrue(e['ok'], e); self.assertEqual(e['tipo'], 'semplice')
-        self.assertAlmostEqual(e['carta']['TSFC'], 2.798034e-05, 10)  # dal mftf della fixture (Engine e' del pacchetto)
+        self.assertAlmostEqual(e['carta']['TSFC'], TSFC_DATI, 12)  # dal mftf della fixture
         d = os.path.join(self.lab.dir_prove, p['id'], 'outputs', '_work', 'Layer1', 'crn_case')
         self.assertTrue(os.path.isfile(os.path.join(d, '0_interface', 'mftf_engine_design.xlsx')))
         self.assertFalse(os.path.exists(os.path.join(d, '4_crn_emissions')))
@@ -512,6 +514,37 @@ class Lavoro(unittest.TestCase):
             self.assertTrue(m['candidati'])
         finally:
             srv.shutdown()
+
+
+    def test_16_f3_converge(self):
+        v = valori_validi(); v['crew/crew_number [-]'] = 11
+        p = self.lab.calcola(v, 'f3', '')
+        self.lab.f3(p['id']).join(120)
+        self.assertIsNone(self.lab.job)
+        f = self.lab.prova(p['id'])['f3_esito']
+        self.assertEqual(f['esito'], 'converge', f)
+        self.assertAlmostEqual(f['sfc'][0], 3e-05, 12); self.assertAlmostEqual(f['sfc'][-1], TSFC_DATI, 12)
+        figli = [x for x in self.lab.prove() if (x.get('f3') or {}).get('padre') == p['id']]
+        self.assertEqual(len(figli), 1); self.assertEqual(figli[0]['f3']['giro'], 1)
+        self.assertAlmostEqual(figli[0]['valori']['flight_expected_performances/sfc [(kg/s)/N]'], TSFC_DATI, 12)
+        ids = [c['id'] for c in self.lab.motori()['candidati']]  # nel confronto solo l'ultimo giro dell'anello
+        self.assertIn(figli[0]['id'], ids); self.assertNotIn(p['id'], ids)
+
+    def test_17_f3_si_ferma_se_il_motore_fallisce(self):
+        v = valori_validi(); v['payload/passenger_number [-]'] = 99; v['crew/crew_number [-]'] = 12
+        p = self.lab.calcola(v, 'f3 ko', '')
+        self.lab.f3(p['id']).join(120)
+        self.assertIsNone(self.lab.job)
+        f = self.lab.prova(p['id'])['f3_esito']
+        self.assertTrue(f['esito'].startswith('fermato'), f); self.assertIn('no feasible design', f['esito'])
+
+    def test_18_cancella_durante_f3(self):
+        v = valori_validi(); v['crew/crew_number [-]'] = 13
+        p = self.lab.calcola(v, 'f3 cancellata', '')
+        t = self.lab.f3(p['id'])
+        self.lab.cancella(p['id'])
+        t.join(120)
+        self.assertIsNone(self.lab.job)
 
 
 if __name__ == '__main__':
