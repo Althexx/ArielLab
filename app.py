@@ -181,77 +181,8 @@ def riepilogo(dir_out, log):
             'freccia': res.get('wing_sweep_angle_[deg]'), 'L_fus': res.get('fuselage_length_[m]')}
 
 
-# ---------------------------------------------------------------- motore ed emissioni (opzione 3)
-NX = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
-# righe del foglio Segments di Engine_and_emissions.xlsx: (etichetta di ARIEL, gruppo, nome, unita', decimali)
-RIGHE_EM = [
-    ('Segment fuel, Layer 1 [kg]', 'Fase', 'Combustibile', 'kg', 0),
-    ('Segment duration, mission profile [min]', 'Fase', 'Durata', 'min', 1),
-    ('Did the requested input converge?', 'Fase', 'Regime richiesto raggiunto', '', 0),
-    ('Net thrust [kN]', 'Motore (per motore)', 'Spinta netta', 'kN', 1),
-    ('TSFC [g/(kN·s)]', 'Motore (per motore)', 'TSFC', 'g/(kN·s)', 2),
-    ('Tt4 [K]', 'Motore (per motore)', 'Tt4', 'K', 0),
-    ('T3 [K]', 'Motore (per motore)', 'T3', 'K', 0),
-    ('P3 [bar]', 'Motore (per motore)', 'P3', 'bar', 1),
-    ('Combustor FAR [-]', 'Motore (per motore)', 'FAR', '', 4),
-    ('EI NOx (equilibrium)', 'Indici di emissione', 'EI NOx, equilibrio', 'g/kg', 1),
-    ('EI NOx (P3T3)', 'Indici di emissione', 'EI NOx, P3-T3', 'g/kg', 1),
-    ('  P3T3 NOx extrapolated outside the T3 range?', 'Indici di emissione', 'P3-T3 fuori dal campo di T3', '', 0),
-    ('EI CO (P3T3)', 'Indici di emissione', 'EI CO, P3-T3', 'g/kg', 2),
-    ('EI CO2 (equilibrium)', 'Indici di emissione', 'EI CO₂', 'g/kg', 0),
-    ('EI H2O (equilibrium)', 'Indici di emissione', 'EI H₂O', 'g/kg', 0),
-    ('CO2 (equilibrium)', 'Emissioni (tutti i motori)', 'CO₂', 'kg', 0),
-    ('H2O (equilibrium)', 'Emissioni (tutti i motori)', 'H₂O', 'kg', 0),
-    ('NOx (equilibrium)', 'Emissioni (tutti i motori)', 'NOx, equilibrio', 'kg', 1),
-    ('NOx (P3T3)', 'Emissioni (tutti i motori)', 'NOx, P3-T3', 'kg', 1),
-    ('CO (P3T3)', 'Emissioni (tutti i motori)', 'CO, P3-T3', 'kg', 1)]
-
-
-def _xlsx(p, foglio):
-    """Righe di un foglio xlsx come liste di testi (celle vuote = ''), con la sola libreria standard."""
-    import xml.etree.ElementTree as ET, zipfile
-    try:
-        z = zipfile.ZipFile(p)
-        ss = [''.join(t.text or '' for t in si.iter(NX + 't')) for si in ET.fromstring(z.read('xl/sharedStrings.xml')).iter(NX + 'si')] \
-            if 'xl/sharedStrings.xml' in z.namelist() else []
-        rid = next(s.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
-                   for s in ET.fromstring(z.read('xl/workbook.xml')).iter(NX + 'sheet') if s.get('name') == foglio)
-        f = next(r.get('Target') for r in ET.fromstring(z.read('xl/_rels/workbook.xml.rels')) if r.get('Id') == rid).lstrip('/')
-        righe = []
-        for r in ET.fromstring(z.read(f if f.startswith('xl/') else 'xl/' + f)).iter(NX + 'row'):
-            riga = []
-            for c in r.iter(NX + 'c'):
-                col = 0
-                for ch in re.match(r'[A-Z]+', c.get('r')).group():
-                    col = col * 26 + ord(ch) - 64
-                v, t = c.find(NX + 'v'), c.get('t')
-                x = ''.join(e.text or '' for e in c.iter(NX + 't')) if t == 'inlineStr' else \
-                    '' if v is None else ss[int(v.text)] if t == 's' else v.text
-                riga += [''] * (col - 1 - len(riga)) + [x]
-            righe.append(riga)
-        return righe
-    except (OSError, KeyError, StopIteration, ValueError, zipfile.BadZipFile, ET.ParseError):
-        return []
-
-
-def emissioni(dir_out):
-    """Tabella per fase di Engine_and_emissions.xlsx (foglio Segments); None se il file non c'e'."""
-    righe = _xlsx(os.path.join(dir_out, 'Layer1', 'Engine_and_emissions.xlsx'), 'Segments')
-    if not righe:
-        return None
-    fasi, per = righe[0][1:], {}
-    for r in righe:  # la prima volta: in fondo al foglio i 3 punti supersonici ripetono le etichette del motore
-        if r:
-            per.setdefault(r[0], r[1:])
-
-    def num(x):
-        try:
-            return float(x)
-        except ValueError:
-            return x or None
-    return {'fasi': fasi, 'righe': [{'gruppo': g, 'nome': n, 'u': u, 'd': d,
-                                     'v': [num(x) for x in (per[k] + [''] * len(fasi))[:len(fasi)]]}
-                                    for k, g, n, u, d in RIGHE_EM if k in per]}
+# ---------------------------------------------------------------- motore ed emissioni (opzione 3): in motore.py
+from motore import _xlsx, RIGHE_EM, segmenti as emissioni  # noqa: E402  (nomi usati dai test e dal Lab)
 
 
 # ---------------------------------------------------------------- ARIEL acceso

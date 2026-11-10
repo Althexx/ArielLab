@@ -5,6 +5,7 @@ import yaml
 QUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, QUI)
 import app
+import motore
 
 DATI = os.path.join(QUI, 'test_dati')
 TEMPLATE = open(os.path.join(DATI, 'HLInputs_TEMPLATE.yaml'), encoding='utf-8').read()
@@ -133,6 +134,79 @@ class Emissioni(unittest.TestCase):
     def test_file_mancante(self):
         self.assertIsNone(app.emissioni('/non/esiste'))
         self.assertEqual(app._xlsx(os.path.join(DATI, 'log_ok.txt'), 'Segments'), [])
+
+
+def scrivi_xlsx(path, fogli):
+    """xlsx minimo (solo libreria standard): {foglio: [[cella, ...], ...]}; testo come inlineStr, numeri come numeri."""
+    import zipfile
+    from xml.sax.saxutils import escape
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    col = lambda i: chr(65 + i)
+    with zipfile.ZipFile(path, 'w') as z:
+        z.writestr('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+        sh = ''.join('<sheet name="%s" sheetId="%d" r:id="rId%d"/>' % (escape(n), i + 1, i + 1) for i, n in enumerate(fogli))
+        z.writestr('xl/workbook.xml', '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                   'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>%s</sheets></workbook>' % sh)
+        z.writestr('xl/_rels/workbook.xml.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">%s</Relationships>'
+                   % ''.join('<Relationship Id="rId%d" Target="worksheets/sheet%d.xml"/>' % (i + 1, i + 1) for i in range(len(fogli))))
+        for i, righe in enumerate(fogli.values()):
+            rr = ''
+            for r, riga in enumerate(righe):
+                cc = ''
+                for c, x in enumerate(riga):
+                    ref = '%s%d' % (col(c), r + 1)
+                    cc += ('<c r="%s"><v>%r</v></c>' % (ref, x)) if isinstance(x, (int, float)) else \
+                          ('<c r="%s" t="inlineStr"><is><t>%s</t></is></c>' % (ref, escape(str(x))))
+                rr += '<row r="%d">%s</row>' % (r + 1, cc)
+            z.writestr('xl/worksheets/sheet%d.xml' % (i + 1),
+                       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>' % rr)
+
+
+ENGINE_V0 = [['Engine designed by the on-design model'], [], ['Design point: Mach [-]', 1.8], ['Design point: altitude [m]', 16000],
+             ['Design point: required thrust per engine [kN]', 52.859], ['Number of engines [-]', 4],
+             ['Bypass ratio BPR [-]', 0.2182], ['Overall pressure ratio OPR [-]', 17.71], ['Turbine inlet temperature Tt4 [K]', 1500],
+             ['Fan diameter [m]', 1.2498], ['Air mass flow per engine [kg/s]', 94.75], ['TSFC at the design point [g/(kN·s)]', 27.98034]]
+
+
+def motore_v0(d, tsfc_engine=27.98034):
+    """Cartella outputs/ con i due file del motore, numeri di v0 (10/11)."""
+    eng = [r if not r or not str(r[0]).startswith('TSFC') else [r[0], tsfc_engine] for r in ENGINE_V0]
+    scrivi_xlsx(os.path.join(d, 'Layer1', 'Engine_and_emissions.xlsx'), {'Segments': [['', 'Take-off']], 'Engine': eng, 'Notes': [[]]})
+    scrivi_xlsx(os.path.join(d, '_work', 'Layer1', 'crn_case', '0_interface', 'mftf_engine_design.xlsx'), {
+        'All Variables': [['Parameter', 'Value', 'Unit'], ['Objective 1: TSFC', 2.798034e-05, 'kg/(N.s)']],
+        'Constraints': [['Constraint', 'Value', 'Lower limit', 'Upper limit', 'Status', 'Source'],
+                        ['D_fan (fan tip, matched) [m]', 1.2498, '-', 1.25, 'OK', 'installation limit']],
+        'Combustion Chamber': [['Parameter', 'Value', 'Unit'], ['fuel species', 'POSF10325', '-']]})
+    return d
+
+
+class Motore(unittest.TestCase):
+    def setUp(self):
+        self.out = motore_v0(tempfile.mkdtemp())
+
+    def test_carta_del_motore(self):
+        c = motore.carta(self.out)
+        self.assertAlmostEqual(c['BPR'], 0.2182, 4); self.assertEqual(c['combustibile'], 'Jet A (POSF10325)')
+        self.assertAlmostEqual(c['TSFC'], 2.798034e-05, 10)
+        self.assertEqual((c['mach'], c['quota'], c['n_motori']), (1.8, 16000, 4))
+        self.assertAlmostEqual(c['Fn_crociera'], 52.859, 3); self.assertAlmostEqual(c['fan'], 1.2498, 4)
+        self.assertEqual(c['vincoli'][0]['nome'], 'D_fan (fan tip, matched) [m]'); self.assertEqual(c['vincoli'][0]['limite'], 1.25)
+
+    def test_tsfc_coerente_tra_i_fogli(self):
+        self.assertAlmostEqual(motore.tsfc_si(self.out), 2.798034e-05, 10)
+
+    def test_tsfc_incoerente_ferma(self):
+        motore_v0(self.out, tsfc_engine=279.8034)
+        with self.assertRaises(ValueError):
+            motore.tsfc_si(self.out)
+
+    def test_xlsx_troncato_non_si_legge(self):
+        f = os.path.join(self.out, motore.FILE_MOTORE[1])
+        b = open(f, 'rb').read(); open(f, 'wb').write(b[:200])
+        self.assertIsNone(motore.carta(self.out))
+
+    def test_file_mancante(self):
+        self.assertIsNone(motore.carta('/non/esiste'))
 
 
 class Lavoro(unittest.TestCase):
