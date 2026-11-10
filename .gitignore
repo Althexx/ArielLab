@@ -4,3 +4,4 @@ __pycache__/
 prove_archivio/
 inputs_iniziali/*
 !inputs_iniziali/LEGGIMI.txt
+.superpowers/
