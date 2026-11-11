@@ -4,182 +4,207 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ARIEL Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Fira+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f3f4f7;--card:#ffffff;--soft:#f7f8fa;--fg:#17202e;--mut:#5f6b7d;--line:#e1e4ea;--acc:#1f5fbf;--accs:#e8f0fc;--ok:#1d7a46;--bad:#b3261e;--warn:#b45309;--chg:#fff4d1;--chgl:#f0c75e;--chgfg:#7a5600;--star:#c98a00}
-@media (prefers-color-scheme:dark){:root{--bg:#11141b;--card:#1a1f2a;--soft:#202634;--fg:#e9ecf2;--mut:#9aa4b6;--line:#2c3446;--acc:#6ea2f0;--accs:#1d2b45;--ok:#6cc58d;--bad:#ff8a80;--warn:#f0a36a;--chg:#3a3219;--chgl:#8a6d20;--chgfg:#f3d27a;--star:#f0c040}}
+:root{--bg:#F8FAFC;--card:#fff;--soft:#F1F5F9;--fg:#0F172A;--mut:#475569;--line:#E2E8F0;--acc:#2563EB;--accs:#EFF6FF;--ok:#15803D;--oks:#F0FDF4;--warn:#B45309;--warns:#FFFBEB;--bad:#B91C1C;--bads:#FEF2F2;--chg:#FEF3C7;--chgfg:#854D0E;--star:#B45309}
+@media (prefers-color-scheme:dark){:root{--bg:#0B1220;--card:#111A2C;--soft:#17223A;--fg:#E2E8F0;--mut:#94A3B8;--line:#243049;--acc:#60A5FA;--accs:#172554;--ok:#4ADE80;--oks:#052E16;--warn:#FBBF24;--warns:#2A1E05;--bad:#F87171;--bads:#2A0B0B;--chg:#3A2F0B;--chgfg:#FDE68A;--star:#FBBF24}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Segoe UI",sans-serif}
-button{font:inherit}
-header{display:flex;align-items:center;gap:20px;padding:0 20px;height:54px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
-header h1{font-size:17px;margin:0;letter-spacing:.2px}
-header h1 small{font-weight:400;color:var(--mut);font-size:13px;margin-left:6px}
-nav{display:flex;gap:4px}
-nav button{white-space:nowrap;border:0;background:none;color:var(--mut);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500}
-nav button:hover{color:var(--fg);background:var(--soft)}
-nav button.on{background:var(--accs);color:var(--acc);font-weight:650}
-.pill{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--mut)}
-.pill i{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 "Fira Sans",system-ui,"Segoe UI",sans-serif}
+.num,td.n,.kpi .v,.inp input{font-family:"Fira Code",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 9px}
+header{display:flex;align-items:center;gap:12px;padding:9px 20px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0;font-weight:600;white-space:nowrap}
+.ver{display:flex;align-items:center;gap:6px;min-width:0}
+.ver select{max-width:460px;font-weight:500}
+.pill{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none}
 .pill.ok i{background:var(--ok)}
-.wrap{display:grid;grid-template-columns:400px 1fr;min-height:calc(100vh - 54px)}
-aside{border-right:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;height:calc(100vh - 54px);position:sticky;top:54px}
-.ahead{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
-.ahead h2{margin:0 0 8px}
-.scroll{overflow-y:auto;flex:1;padding:6px 10px 12px}
-.afoot{border-top:1px solid var(--line);padding:12px 16px;display:grid;gap:7px;background:var(--card)}
-main{padding:20px 24px;min-width:0}
-h2{font-size:15px;margin:0 0 12px;font-weight:650}
-h3{font-size:13px;margin:0 0 8px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.btn{border:1px solid var(--line);background:var(--card);color:var(--fg);padding:7px 14px;border-radius:8px;cursor:pointer}
-.btn:hover{border-color:var(--mut)}
-.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:650}
+.tools{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--card);padding:6px 12px;border-radius:8px;transition:border-color .2s,background .2s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--mut);background:var(--soft)}
+.btn.on{background:var(--fg);color:var(--card);border-color:var(--fg)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:500}
 .btn.pri:hover{filter:brightness(1.08)}
 .btn:disabled{opacity:.45;cursor:default}
-.btn.sm{padding:3px 9px;font-size:12px;border-radius:6px}
-.btn.lnk{border:0;background:none;color:var(--acc);padding:0;font-size:12px;cursor:pointer}
-input,select,textarea{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:5px 8px}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--accs);border-color:var(--acc)}
-.afoot input,.afoot textarea,#cerca{width:100%}
-.run{display:flex;gap:10px;align-items:center}
-.run .btn.pri{flex:0 0 auto;padding:9px 22px}
-.timer{color:var(--mut);font-variant-numeric:tabular-nums;font-size:12.5px}
-.rifbox{font-size:12.5px;border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--soft);color:var(--mut)}
-.rifbox b{color:var(--fg)}
-.rifbox .chip{display:inline-block;background:var(--chg);border:1px solid var(--chgl);color:var(--chgfg);border-radius:5px;padding:0 6px;font-size:11.5px;font-weight:600}
-details.g{margin:6px 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
-details.g summary{cursor:pointer;font-weight:650;padding:9px 12px;list-style:none;display:flex;align-items:center;gap:8px}
-details.g summary::-webkit-details-marker{display:none}
-details.g summary:before{content:'▸';color:var(--mut);transition:transform .15s}
-details.g[open] summary:before{transform:rotate(90deg)}
-details.g summary .n{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--chgfg);background:var(--chg);border:1px solid var(--chgl);border-radius:10px;padding:0 7px}
-.gb{padding:0 6px 6px}
-.f{display:grid;grid-template-columns:1fr 112px;gap:3px 10px;align-items:center;padding:6px 8px;border-radius:8px;border-left:3px solid transparent}
-.f:hover{background:var(--soft)}
-.f label{font-size:13px;line-height:1.3}
-.f label small{display:block;color:var(--mut);font-size:11.5px;margin-top:1px}
-.inp{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;background:var(--card);overflow:hidden}
-.inp input,.inp select{border:0;border-radius:0;width:100%;min-width:0;text-align:right;background:transparent;padding:5px 7px}
-.inp input:focus,.inp select:focus{outline:none}
-.inp:focus-within{border-color:var(--acc);box-shadow:0 0 0 2px var(--accs)}
-.inp .u{font-size:11.5px;color:var(--mut);padding:0 7px 0 0;white-space:nowrap}
-.f.chg{background:var(--chg);border-left-color:var(--chgl)}
-.f .ref{grid-column:1/-1;font-size:11.5px;color:var(--chgfg)}
-.f .ref button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:11.5px;padding:0;margin-left:4px}
-.f.err .inp{border-color:var(--bad)}
-.f .rng{grid-column:1/-1;font-size:11.5px;color:var(--bad)}
-.note{color:var(--mut);font-size:12.5px}
-.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;overflow-x:auto}
-.errbox{border-color:var(--bad);color:var(--bad);white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
-.ptop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.ptop b{font-size:18px}
-.vs{font-size:12.5px;color:var(--mut)}
-.kgrp{margin-bottom:14px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px}
-.kpi .l{font-size:12.5px;color:var(--mut)}
-.kpi .v{font-size:23px;font-weight:650;font-variant-numeric:tabular-nums;margin-top:2px}
-.kpi .v small{font-size:13px;font-weight:500;color:var(--mut);margin-left:3px}
-.kpi .d{font-size:12px;font-variant-numeric:tabular-nums;min-height:16px}
-.up{color:var(--warn)}.dn{color:var(--ok)}
-.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
-.imgs figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px}
-.imgs img{width:100%;border-radius:6px;background:#fff;cursor:zoom-in;display:block}
-.imgs figcaption{font-size:12.5px;color:var(--mut);padding:6px 2px 0}
-.bars div{display:grid;grid-template-columns:170px 1fr 52px;gap:10px;align-items:center;font-size:13px;margin:5px 0}
-.bars i{display:block;height:12px;background:var(--acc);border-radius:4px;opacity:.45}
-.bars .act{font-weight:650}
-.bars .act i{opacity:1;background:var(--warn)}
-.bars b{text-align:right;font-variant-numeric:tabular-nums}
+.btn.sm{padding:3px 9px;font-size:12.5px}
+.btn.lnk{border:0;background:none;color:var(--acc);padding:0;font-size:12.5px;text-decoration:underline}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:16px 20px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.step{border:0;background:none;text-align:left;padding:11px 16px;border-right:1px solid var(--line);transition:background .2s;position:relative;min-width:0}
+.step:last-child{border-right:0}
+.step:hover{background:var(--soft)}
+.step.on{background:var(--accs)}
+.step.on:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--acc)}
+.step .t{display:flex;align-items:center;gap:8px;font-weight:600}
+.step .k{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:var(--soft);border:1px solid var(--line);flex:none}
+.step.on .k{background:var(--acc);color:#fff;border-color:var(--acc)}
+.step .s{font-size:12.5px;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ok{color:var(--ok)}.wa{color:var(--warn)}.ba{color:var(--bad)}
+main{padding:14px 20px 48px}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.bar .sp{flex:1}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:20px;padding:3px 10px;font-size:12.5px;transition:background .2s}
+.chip:hover{background:var(--soft)}
+.chip.on{background:var(--fg);color:var(--card);border-color:var(--fg)}
+.hint{font-size:12.5px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px;align-items:start}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.card+.card,.grid+.card,.grid2+.card,.card+.grid2,.card+.grid3,.grid2+.grid3{margin-top:12px}
+.card h2{font-size:13.5px;margin:0 0 8px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 .r{margin-left:auto;font-weight:400;display:flex;gap:6px;align-items:center}
+h3{font-size:12px;margin:10px 0 6px;color:var(--mut);font-weight:500}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th{font-size:12px;color:var(--mut);font-weight:600;text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-th:first-child,td:first-child{text-align:left}
-#lista tr:hover td{background:var(--soft)}
-td.dif{background:var(--chg);color:var(--chgfg);font-weight:600}
-.nm{border:0;background:none;padding:0;color:var(--fg);font-weight:650;cursor:pointer;text-align:left}
-.nm:hover{color:var(--acc);text-decoration:underline}
+td,th{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--mut);font-weight:500;text-align:right;white-space:nowrap}
+th:first-child,th.l{text-align:left}
+tr:last-child>td{border-bottom:0}
+td.n{text-align:right;white-space:nowrap}
+td.u{color:var(--mut);font-size:12px;white-space:nowrap}
+tbody tr:hover>td,table.h tr:hover>td{background:var(--soft)}
+th.sec{text-align:left;color:var(--fg);font-weight:600;padding-top:10px}
+.inp{display:flex;align-items:center;justify-content:flex-end}
+.inp input,.inp select{width:108px;text-align:right;padding:3px 7px}
+.inp select{text-align:left}
+.inp input:focus,.inp select:focus{border-color:var(--acc);outline:2px solid var(--accs);outline-offset:0}
+tr.chg>td{background:var(--chg)}
+tr.err .inp input{border-color:var(--bad)}
+.msg{font-size:11.5px;display:block}
+.msg.ba{color:var(--bad)}.msg.c{color:var(--chgfg)}
+.src{font-size:11.5px;border-radius:4px;padding:1px 6px;background:var(--soft);color:var(--mut);white-space:nowrap;border:0;cursor:help}
+.src.dif{background:var(--warns);color:var(--warn)}
+.lab small{display:block;color:var(--mut);font-size:11.5px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.kpi .l{font-size:12px;color:var(--mut)}
+.kpi .v{font-size:19px;font-weight:500;margin-top:2px;white-space:nowrap}
+.kpi .v small{font-size:12px;color:var(--mut);margin-left:3px;font-family:"Fira Sans",sans-serif}
+.kpi .d{font-size:11.5px;color:var(--mut);min-height:15px}
+.up{color:var(--warn)}.dn{color:var(--ok)}
+.bars div{display:grid;grid-template-columns:160px 1fr 44px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.bars i{display:block;height:10px;border-radius:3px;background:var(--acc);opacity:.35}
+.bars .act{font-weight:600}.bars .act i{opacity:1;background:var(--warn)}
+.bars b{text-align:right;font-weight:500}
+figure{margin:0}
+figure img{width:100%;border-radius:6px;background:#fff;cursor:zoom-in;display:block}
+figcaption{font-size:12.5px;color:var(--mut);padding:6px 2px 0}
+.vr{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.vr:last-child{border-bottom:0}
+.tag{font-size:11px;font-weight:600;border-radius:4px;padding:2px 7px;white-space:nowrap;min-width:62px;text-align:center}
+.tag.ok{background:var(--oks)}.tag.wa{background:var(--warns)}.tag.ba{background:var(--bads)}
+.errbox{border-color:var(--bad);color:var(--bad);white-space:pre-wrap;font-family:"Fira Code",Consolas,monospace;font-size:12.5px}
+.empty{padding:28px;text-align:center;color:var(--mut)}
 .star{color:var(--star)}
-.acts{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;max-width:390px;margin-left:auto}
-#lista td.pn{text-align:left;white-space:normal;min-width:200px}
-#lista td.pt{text-align:left;white-space:normal;color:var(--mut);min-width:180px;max-width:320px;font-size:12.5px}
-#lista th.l{text-align:left}
-.acts .btn.on{background:var(--chg);border-color:var(--chgl);color:var(--chgfg)}
-.lb{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:9}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:9;cursor:zoom-out}
 .lb img{max-width:92vw;max-height:92vh;background:#fff;border-radius:8px}
-.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.acts{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap}
+td.dif{background:var(--chg);color:var(--chgfg);font-weight:500}
+.nm{border:0;background:none;padding:0;font-weight:600;text-align:left}
+.nm:hover{color:var(--acc);text-decoration:underline}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px;margin-top:12px}
 svg text{fill:var(--mut);font-size:11px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .hid{display:none!important}
-.empty{padding:30px;text-align:center;color:var(--mut)}
-@media (max-width:900px){header{height:auto;flex-wrap:wrap;gap:6px 16px;padding:8px 16px}nav{flex-wrap:wrap}.wrap{grid-template-columns:1fr}aside{position:static;height:auto}}
+.scrollx{overflow-x:auto}
+@media (max-width:900px){.ver{width:100%}.ver select{flex:1;min-width:0;max-width:none}.steps{grid-template-columns:1fr 1fr}.step:nth-child(2){border-right:0}.grid2{grid-template-columns:1fr}.grid,.grid3,.charts{grid-template-columns:1fr}.tools{margin-left:0}header{position:static}}
 </style>
 </head>
 <body>
-<header><h1>ARIEL Lab<small>dimensionamento con ARIEL-SST</small></h1>
-  <nav id="tabs"><button data-t="prova" class="on">Prova</button><button data-t="conf">Confronto</button><button data-t="serie">Serie</button><button data-t="em">Motore ed emissioni</button></nav>
-  <span class="pill" id="st"><i></i><span></span></span></header>
-<div class="wrap">
-<aside>
-  <div class="ahead">
-    <h2>Input di ARIEL</h2>
-    <input id="cerca" type="search" placeholder="Cerca un input (es. pista, Mach, CL)…">
-    <div class="rifbox" id="rifbox"></div>
-    <div class="note" id="conv" style="margin-top:6px"></div>
+<header>
+  <h1>ARIEL Lab</h1>
+  <div class="ver"><label class="hint" for="versel">Versione</label><select id="versel"></select>
+    <button class="btn sm" id="vren" title="Dai alla versione un nome che dica cosa cambia">Rinomina</button></div>
+  <span class="pill" id="st"><i></i><span></span></span>
+  <div class="tools">
+    <button class="btn sm" data-tool="conf"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16M9 6v12"/></svg>Versioni e confronto</button>
+    <button class="btn sm" data-tool="serie"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/></svg>Studio di sensibilità</button>
+    <button class="btn sm" id="esp" title="File JSON che il Registro parametri importa"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>Esporta</button>
   </div>
-  <div class="scroll" id="campi"></div>
-  <div class="afoot">
-    <input id="nome" placeholder="Nome della prova (es. CL decollo 0,9)">
-    <textarea id="nota" rows="2" placeholder="Perché questa prova (facoltativo)"></textarea>
-    <div class="run"><button class="btn pri" id="calc">Calcola</button><span class="timer" id="timer"></span></div>
-  </div>
-</aside>
+</header>
+
+<nav class="steps" id="steps" aria-label="Passi del lavoro">
+  <button class="step on" data-s="1"><div class="t"><span class="k">1</span>Input</div><div class="s" id="ss1"></div></button>
+  <button class="step" data-s="2"><div class="t"><span class="k">2</span>Velivolo</div><div class="s" id="ss2"></div></button>
+  <button class="step" data-s="3"><div class="t"><span class="k">3</span>Motore</div><div class="s" id="ss3"></div></button>
+  <button class="step" data-s="4"><div class="t"><span class="k">4</span>Uscite</div><div class="s" id="ss4"></div></button>
+</nav>
+
 <main>
-  <section id="t-prova">
-    <div class="ptop"><b id="ptitle"></b><span class="note" id="pdata"></span><span class="vs" id="pvs"></span><button class="btn sm" id="esp" title="Scarica la prova in un file JSON per la Control Room">Esporta per la Control Room</button></div>
-    <div id="perr" class="box errbox hid"></div>
-    <div id="kpis"></div>
-    <div class="box" id="barbox"><h2>Spinta richiesta da ogni vincolo</h2><p class="note" style="margin:-6px 0 10px">T/W richiesto da ciascuna fase al carico alare di progetto. Il vincolo più alto fissa la spinta (in arancione).</p><div class="bars" id="bars"></div></div>
-    <div class="imgs" id="imgs"></div>
-  </section>
-  <section id="t-em" class="hid">
-    <div class="box"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Confronto dei motori</h2>
-      <span class="row"><span class="note">Migliore = minimo di</span><select id="criterio"><option value="MTOM">MTOM</option><option value="fuel">combustibile di missione</option><option value="co2_pkm">CO₂ per passeggero·km</option><option value="TSFC">TSFC di crociera</option></select></span></div>
-      <p class="note" style="margin-top:0">Ogni colonna è un velivolo con il suo motore (opzione 3). ✅ rispetta il vincolo, ❌ no, — non verificabile (per esempio senza CRN). Clic sul nome per il profilo completo qui sotto.</p>
-      <div id="confronto"></div>
-      <details style="margin-top:12px"><summary class="note" style="cursor:pointer">Vincoli (li decidi tu)</summary><div id="vincoli" style="margin-top:8px"></div></details></div>
-    <div class="box" id="embox"></div></section>
-  <section id="t-conf" class="hid">
-    <div class="box"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Prove salvate</h2><button class="btn sm" id="csv">Esporta CSV delle prove spuntate</button></div>
-      <p class="note" style="margin:0 0 8px">Clic sul nome per aprire la prova. <span class="star">★</span> = prova di riferimento: gli input diversi da lei sono evidenziati in giallo a sinistra, e i risultati mostrano la differenza da lei.</p>
-      <table id="lista"></table></div>
-    <div class="box" id="cmpbox"><h2>Confronto delle prove spuntate</h2><div id="cmp"></div></div>
-  </section>
-  <section id="t-serie" class="hid">
-    <div class="box"><h2>Far variare un input</h2>
-      <div class="row"><select id="spar" style="max-width:340px"></select> da <input id="sda" type="number" step="any" style="width:100px"> a <input id="sa" type="number" step="any" style="width:100px"> con <input id="sn" type="number" value="7" min="2" max="25" style="width:64px"> punti
-        <button class="btn pri" id="sgo">Avvia la serie</button><button class="btn" id="sstop" disabled>Ferma</button><span class="timer" id="sstat"></span></div>
-      <p class="note">Gli altri input restano quelli della colonna di sinistra. Ogni punto viene salvato come prova (5–15 s l'uno).</p></div>
-    <div class="charts" id="charts"></div>
-  </section>
+<!-- 1 · INPUT -->
+<section id="v1">
+  <div class="bar">
+    <input id="cerca" type="search" placeholder="Cerca: pista, Mach, CL…" aria-label="Cerca un input" style="width:200px">
+    <span id="filtri" class="row"></span>
+    <span class="sp"></span>
+    <button class="btn sm" id="dareg" title="Mette in ogni campo il valore scritto nel Registro parametri">Valori del registro</button>
+    <button class="btn sm" id="daver" title="Annulla le modifiche: torna agli input della versione aperta">Annulla modifiche</button>
+  </div>
+  <div class="bar">
+    <input id="nome" placeholder="Nome della nuova versione, per es. «CL decollo 0,9»" aria-label="Nome della nuova versione" style="flex:1;min-width:240px">
+    <input id="nota" placeholder="Perché (facoltativo)" aria-label="Perché questa versione" style="flex:1;min-width:180px">
+    <button class="btn pri" id="calc"><svg class="i" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg>Calcola il velivolo</button>
+    <span class="hint num" id="timer">5–15 s</span>
+  </div>
+  <div class="grid" id="campi"></div>
+  <p class="hint" id="conv"></p>
+</section>
+
+<!-- 2 · VELIVOLO -->
+<section id="v2" class="hid">
+  <div id="perr" class="card errbox hid"></div>
+  <div id="vel"></div>
+</section>
+
+<!-- 3 · MOTORE -->
+<section id="v3" class="hid">
+  <div id="embox"></div>
+  <div class="card"><h2>Confronto dei motori<span class="r"><span class="hint">migliore = minimo di</span><select id="criterio"><option value="MTOM">MTOM</option><option value="fuel">combustibile di missione</option><option value="co2_pkm">CO₂ per passeggero·km</option><option value="TSFC">TSFC di crociera</option></select></span></h2>
+    <p class="hint" style="margin-top:0">Una colonna per ogni versione con il motore calcolato (dell'anello F3 solo l'ultimo giro). OK rispetta il vincolo, NO no, — non verificabile. Clic sul nome per aprirla.</p>
+    <div id="confronto" class="scrollx"></div>
+    <details style="margin-top:10px"><summary class="hint" style="cursor:pointer">Vincoli dei motori (li decidi tu)</summary><div id="vincoli" style="margin-top:8px"></div></details></div>
+</section>
+
+<!-- 4 · USCITE -->
+<section id="v4" class="hid"><div id="usc"></div></section>
+
+<!-- STRUMENTI -->
+<section id="vconf" class="hid">
+  <div class="card"><h2>Versioni salvate<span class="r"><button class="btn sm" id="csv">CSV delle spuntate</button></span></h2>
+    <p class="hint" style="margin-top:0">Clic sul nome per aprire la versione. <span class="star">★</span> = riferimento: i risultati del passo 2 mostrano la differenza da lei. Spunta da 2 a 4 versioni per confrontarle qui sotto.</p>
+    <div class="scrollx"><table id="lista" class="h"></table></div></div>
+  <div class="card"><h2>Confronto delle versioni spuntate</h2><div id="cmp" class="scrollx"></div></div>
+</section>
+<section id="vserie" class="hid">
+  <div class="card"><h2>Far variare un input</h2>
+    <div class="row"><select id="spar" style="max-width:340px" aria-label="Input da far variare"></select> da <input id="sda" type="number" step="any" style="width:100px" aria-label="Da"> a <input id="sa" type="number" step="any" style="width:100px" aria-label="A"> con <input id="sn" type="number" value="7" min="2" max="25" style="width:64px" aria-label="Punti"> punti
+      <button class="btn pri" id="sgo">Avvia la serie</button><button class="btn" id="sstop" disabled>Ferma</button><span class="hint" id="sstat"></span></div>
+    <p class="hint">Gli altri input restano quelli del passo 1. Ogni punto viene salvato come versione (5–15 s l'uno).</p></div>
+  <div class="charts" id="charts"></div>
+</section>
 </main>
-</div>
 <script>
 const $=s=>document.querySelector(s);
 // nome leggibile, gruppo e spiegazione di ogni input (chiave del file HLInputs.yaml senza unità)
-const GR=[['conf','Configurazione e calcolo'],['req','Requisiti di missione'],['tec','Velivolo e tecnologia'],['apt','Aeroporti e piste'],['to','Decollo e 2° segmento'],['sub','Salita e crociera subsonica'],['sup','Salita e crociera supersonica'],['lnd','Atterraggio']];
+const GR=[['req','Missione e carico'],['apt','Aeroporti e piste'],['tec','Velivolo e tecnologia'],['conf','Configurazione e calcolo'],['to','Decollo e 2° segmento'],['sub','Salita e crociera subsonica'],['sup','Salita e crociera supersonica'],['lnd','Atterraggio']];
 const L={
- H_Tail:['conf','Piano di coda orizzontale'],Canard:['conf','Canard'],MTOW_Tolerance:['conf','Tolleranza di convergenza della MTOM','differenza massima tra due iterazioni'],
+ H_Tail:['conf','Piano di coda orizzontale'],Canard:['conf','Canard'],MTOW_Tolerance:['conf','Tolleranza sulla MTOM','differenza massima tra due iterazioni'],
  passenger_number:['req','Passeggeri'],passenger_weight:['req','Massa per passeggero','bagaglio compreso'],crew_number:['req','Membri dell\'equipaggio'],crew_weight:['req','Massa per membro dell\'equipaggio'],
- mach:['req','Mach di crociera','Mach di progetto, crociera supersonica'],range:['req','Autonomia a carico massimo'],
- sfc:['tec','Consumo specifico (SFC)','in crociera, per l\'equazione di Breguet'],number_engines:['tec','Numero di motori'],
- take_off_cl_max:['tec','C<sub>L</sub> massimo al decollo','fissa la linea di decollo del matching chart, quindi la spinta'],landing_cl_max:['tec','C<sub>L</sub> massimo all\'atterraggio','fissa il carico alare, quindi la superficie alare'],
+ mach:['req','Mach di crociera','crociera supersonica, di progetto'],range:['req','Autonomia a carico massimo'],
+ sfc:['tec','Consumo specifico sfc','in crociera, per Breguet'],number_engines:['tec','Numero di motori'],
+ take_off_cl_max:['tec','C<sub>L</sub> max al decollo','fissa la spinta'],landing_cl_max:['tec','C<sub>L</sub> max all\'atterraggio','fissa la superficie alare'],
  gradient_sub_climb:['tec','Gradiente di salita subsonica','0,03 = 3 %'],gradient_sup_climb:['tec','Gradiente di salita supersonica','0,04 = 4 %'],
- max_take_off_field_length:['apt','Lunghezza della pista di decollo','TOFL'],max_landing_field_length:['apt','Lunghezza della pista di atterraggio','LFL'],take_off_altitude:['apt','Quota dell\'aeroporto di partenza'],landing_altitude:['apt','Quota dell\'aeroporto di arrivo'],
- take_off_mach:['to','Mach al decollo'],take_off_alfa:['to','Angolo d\'attacco al decollo','non entra più nel vincolo di decollo'],'2nd_segment_mach':['to','Mach nel 2° segmento'],'2nd_segment_alfa':['to','Angolo d\'attacco nel 2° segmento'],
- subsonic_climb_alfa:['sub','Angolo d\'attacco in salita'],subsonic_climb_throttle:['sub','Manetta in salita','0,9 = 90 %'],subsonic_cruise_mach:['sub','Mach di crociera subsonica'],subsonic_cruise_altitude:['sub','Quota di crociera subsonica'],
- subsonic_cruise_alfa:['sub','Angolo d\'attacco in crociera'],subsonic_cruise_throttle:['sub','Manetta in crociera'],subsonic_cruise_distance:['sub','Tratta volata in subsonico','frazione dell\'autonomia: 0,1 = 10 %'],
- supersonic_climb_alfa:['sup','Angolo d\'attacco in salita'],supersonic_climb_throttle:['sup','Manetta in salita'],supersonic_cruise_altitude:['sup','Quota di crociera supersonica'],supersonic_cruise_alfa:['sup','Angolo d\'attacco in crociera'],supersonic_cruise_throttle:['sup','Manetta in crociera','1 = piena'],
+ max_take_off_field_length:['apt','Pista di decollo (TOFL)'],max_landing_field_length:['apt','Pista di atterraggio (LFL)'],take_off_altitude:['apt','Quota dell\'aeroporto di partenza'],landing_altitude:['apt','Quota dell\'aeroporto di arrivo'],
+ take_off_mach:['to','Mach al decollo'],take_off_alfa:['to','Angolo d\'attacco al decollo'],'2nd_segment_mach':['to','Mach nel 2° segmento'],'2nd_segment_alfa':['to','Angolo d\'attacco nel 2° segmento'],
+ subsonic_climb_alfa:['sub','Angolo d\'attacco in salita'],subsonic_climb_throttle:['sub','Manetta in salita'],subsonic_cruise_mach:['sub','Mach di crociera'],subsonic_cruise_altitude:['sub','Quota di crociera'],
+ subsonic_cruise_alfa:['sub','Angolo d\'attacco in crociera'],subsonic_cruise_throttle:['sub','Manetta in crociera'],subsonic_cruise_distance:['sub','Tratta in subsonico','frazione dell\'autonomia'],
+ supersonic_climb_alfa:['sup','Angolo d\'attacco in salita'],supersonic_climb_throttle:['sup','Manetta in salita'],supersonic_cruise_altitude:['sup','Quota di crociera'],supersonic_cruise_alfa:['sup','Angolo d\'attacco in crociera'],supersonic_cruise_throttle:['sup','Manetta in crociera'],
  landing_mach:['lnd','Mach all\'atterraggio'],landing_alfa:['lnd','Angolo d\'attacco all\'atterraggio']};
-const UN={'-':'','deg':'°','%':'(0–1)','(kg/s)/N':'kg/(N·s)'};
+const UN={'-':'','deg':'°','%':'0–1','(kg/s)/N':'kg/(N·s)'};
+const FONTE={'Requisiti del topic':'Requisiti','Norme (EASA)':'Norme','Calcoli del team':'Calcoli','Scelte del team':'Scelta','Analisi statistica':'Statistica'};
 const chiave=c=>c.chiave.replace(/\s*\[[^\]]*\]\s*$/,'');
 const info=c=>L[chiave(c)]||['altro',chiave(c).replace(/_/g,' ')];
 const lab=c=>info(c)[1];
@@ -187,141 +212,207 @@ const labTxt=c=>lab(c).replace(/<[^>]+>/g,'');
 const un=c=>chiave(c)==='MTOW_Tolerance'?'kg':(c.unita in UN?UN[c.unita]:c.unita);
 const VINC={'Take-off':'Decollo','2nd segment':'2° segmento','Subsonic climb':'Salita subsonica','Subsonic cruise':'Crociera subsonica','Supersonic climb':'Salita supersonica','Supersonic cruise':'Crociera supersonica','Landing':'Atterraggio'};
 const tv=s=>String(s??'—').split(/\s*=\s*/).map(x=>VINC[x]||x).join(' = ');
-const KG=[['Masse',[['MTOM','Massa massima al decollo (MTOM)','t',1,1000],['OEM','Massa a vuoto operativa (OEM)','t',1,1000],['carburante','Carburante di missione','t',1,1000]]],
- ['Ala e spinta',[['S','Superficie alare','m²',1],['WS','Carico alare W/S','kg/m²',0],['TW','Rapporto spinta/peso T/W','',3],['T_eng','Spinta per motore','kN',1]]],
- ['Geometria e aerodinamica',[['apertura','Apertura alare','m',2],['L_fus','Lunghezza della fusoliera','m',2],['LD_sup','Efficienza L/D supersonica','',2],['LD_sub','Efficienza L/D subsonica','',2],['iterazioni','Iterazioni del ciclo','',0]]]];
-const KP=KG.flatMap(g=>g[1]);
+const KP=[['MTOM','MTOM','t',1,1000],['OEM','OEM','t',1,1000],['carburante','Combustibile di missione','t',1,1000],['S','Superficie alare','m²',0],['WS','Carico alare W/S','kg/m²',0],['TW','T/W di progetto','',2],['T_eng','Spinta per motore','kN',0],['apertura','Apertura alare','m',2],['L_fus','Lunghezza fusoliera','m',2],['LD_sup','L/D supersonica','',2],['LD_sub','L/D subsonica','',2],['iterazioni','Iterazioni','',0]];
 const IMG=[['Layer1/Matching Chart.png','Matching chart'],['Layer1/aircraft_topview.png','Vista dall\'alto'],['Layer1/aircraft_sideview.png','Vista di fianco'],['MissionProfile.png','Profilo di missione']];
-let S={schema:[],valori:{},prove:[],note:[]},V={},SEL=null,CHK=new Set(),STOP=false,BUSY=false,Q='';
-const fmt=(x,d=0)=>x==null||x===''?'—':(typeof x==='number'?x.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d}):x);
+const SFC='flight_expected_performances/sfc [(kg/s)/N]';
+let S={schema:[],valori:{},prove:[],note:[]},F={},V={},SEL=null,STEP='1',CHK=new Set(),STOP=false,BUSY=false,Q='',FIL='tutti',RES={};
+const fmt=(x,d=0)=>x==null||x===''||Number.isNaN(x)?'—':(typeof x==='number'?x.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d}):x);
 const fv=x=>typeof x==='number'?x.toLocaleString('it-IT',{maximumFractionDigits:6}):x;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const rif=()=>S.prove.find(p=>p.rif);
-const sc=(c,x)=>c.scelte?(String(x)==='1'?'presente':'assente'):fv(x);
+const cur=()=>S.prove.find(p=>p.id===SEL);
+const sc=(c,x)=>c.scelte?(String(x)==='1'?'sì':'no'):fv(x);
+const out=(p,f)=>`/prove/${encodeURIComponent(p.id)}/outputs/${f.split('/').map(encodeURIComponent).join('/')}`;
 async function api(u,b){const r=await fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{});return r.json()}
-function stato(ok,job){$('#st').classList.toggle('ok',ok&&!job);$('#st span').textContent=job?`ARIEL ${job.tipo==='f3'?'fa l’anello F3 (giro '+((job.f3||{}).giro??0)+')':'calcola il motore'} da ${Math.round((Date.now()/1000-job.inizio)/60)} min…`:ok?'ARIEL pronto · un calcolo richiede 5–15 s':'ARIEL si sta avviando (circa 20 s)…'}
-async function carica(sel){S=await api('/api/stato');if(!Object.keys(V).length)V={...S.valori};if(sel!==undefined)SEL=sel;else if(!SEL&&S.prove.length)SEL=S.prove[0].id;
+
+// ---------- stato generale
+function stato(ok,job){$('#st').classList.toggle('ok',ok&&!job);$('#st span').textContent=job?`ARIEL ${job.tipo==='f3'?'fa l’anello F3 (giro '+((job.f3||{}).giro??0)+')':'calcola il motore'} da ${Math.round((Date.now()/1000-job.inizio)/60)} min…`:ok?'ARIEL pronto':'ARIEL si sta avviando (circa 20 s)…'}
+async function carica(sel){S=await api('/api/stato');try{F=await api('/api/fonti');if(F.errore)F={}}catch(e){F={}}
+  if(sel!==undefined)SEL=sel;if(!cur())SEL=S.prove.length?S.prove[0].id:null;
+  if(!Object.keys(V).length)V={...(cur()?cur().valori:S.valori)};
   $('#conv').innerHTML=S.note.length?'Input del pacchetto convertiti al formato della release del 27/10: '+S.note.map(esc).join('; ')+'.':'';
-  stato(S.ariel_pronto,S.job);campi();prova();lista();serieSel();motori();$('#sgo').disabled=!!S.job}
-function errore(c,x){if(x===''||x==null||(c.scelte?false:isNaN(x)))return'manca il valore';if(c.scelte)return'';if(c.min!=null&&(x<c.min||x>c.max))return`valore ammesso da ${fv(c.min)} a ${fv(c.max)}`;if(c.positivo&&x<=0)return'deve essere positivo';if(c.intero&&x!=Math.round(x))return'deve essere un numero intero';return''}
-const diverso=(c,R)=>R&&String(R.valori[c.id])!==String(V[c.id]);
-function campi(){const R=rif(),per={};S.schema.forEach(c=>{const g=info(c)[0];(per[g]=per[g]||[]).push(c)});
-  const nd=R?S.schema.filter(c=>diverso(c,R)).length:0;
-  $('#rifbox').innerHTML=R?`Riferimento <span class="star">★</span> <b>${esc(R.nome)}</b> (${esc(R.data.split(' ')[0])}). ${nd?`<span class="chip">${nd} input divers${nd>1?'i':'o'}</span> da questa prova. <button class="btn lnk" id="rall">Riporta tutti ai valori di riferimento</button>`:'Tutti gli input sono uguali a questa prova.'}<br><span style="font-size:11.5px">Si cambia in Confronto con il pulsante ★.</span>`
-    :'Nessuna prova di riferimento: in Confronto puoi segnarne una con ★ per vedere quali input cambiano.';
-  const q=Q.trim().toLowerCase(),vis=c=>!q||(labTxt(c)+' '+(info(c)[2]||'')+' '+c.chiave).toLowerCase().includes(q);
-  $('#campi').innerHTML=[...GR,['altro','Altri input']].filter(([g])=>per[g]&&per[g].some(vis)).map(([g,t])=>{const cs=per[g].filter(vis),n=R?cs.filter(c=>diverso(c,R)).length:0;
-    return `<details class="g" open><summary>${t}${n?`<span class="n" title="input diversi dal riferimento">${n}</span>`:''}</summary><div class="gb">${cs.map(c=>{const x=V[c.id],r=R?R.valori[c.id]:undefined,ch=diverso(c,R),e=errore(c,x),[,nm,hint]=info(c),u=un(c);
-    const inp=c.scelte?`<select data-id="${esc(c.id)}">${c.scelte.map(s=>`<option value="${s}" ${String(x)===s?'selected':''}>${s==='1'?'presente':'assente'}</option>`).join('')}</select>`:`<input type="number" step="any" data-id="${esc(c.id)}" value="${x??''}">`;
-    return `<div class="f ${ch?'chg':''} ${e?'err':''}" title="Chiave ARIEL: ${esc(c.chiave)}${c.commento?' — '+esc(c.commento):''}"><label>${nm}${hint?`<small>${esc(hint)}</small>`:''}</label><div class="inp">${inp}${u?`<span class="u">${esc(u)}</span>`:''}</div>${ch?`<span class="ref">★ nel riferimento: ${esc(sc(c,r))}<button data-reset="${esc(c.id)}">riporta</button></span>`:''}${e?`<span class="rng">${esc(e)}</span>`:''}</div>`}).join('')}</div></details>`}).join('')||'<p class="note" style="padding:10px">Nessun input corrisponde alla ricerca.</p>';
-  $('#calc').disabled=BUSY||!!S.job||S.schema.some(c=>errore(c,V[c.id]))}
+  stato(S.ariel_pronto,S.job);versioni();await motoriDati();tutto()}
+function tutto(){campi();velivolo();emBox();uscite();lista();serieSel();confrontoMotori();vincoliBox();passi();$('#sgo').disabled=!!S.job}
+function versioni(){const R=rif();$('#versel').innerHTML=S.prove.length?S.prove.map(p=>{const r=p.riepilogo;return `<option value="${esc(p.id)}" ${p.id===SEL?'selected':''}>${p.rif?'★ ':''}${esc(p.nome)} · ${r.ok?fmt(r.MTOM/1000,1)+' t':'non converge'} · ${esc(p.data.slice(0,16))}</option>`}).join(''):'<option>nessuna versione</option>'}
+$('#versel').onchange=e=>apri(e.target.value);
+function modificato(){const p=cur();return p&&S.schema.some(c=>String(p.valori[c.id])!==String(V[c.id]))}
+function apri(id){if(id===SEL)return;if(modificato()&&!confirm('Hai input modificati e non calcolati. Aprire un\'altra versione li scarta. Continuare?')){versioni();return}
+  SEL=id;V={...cur().valori};versioni();tutto()}
+$('#vren').onclick=async()=>{const q=cur();if(!q)return;const n=prompt('Nome della versione (di\' cosa cambia, per es. «Baseline 10/11 · sfc ARIEL +5 %»)',q.nome);if(n==null)return;const no=prompt('Nota',q.nota);await api('/api/prova/'+encodeURIComponent(q.id),{nome:n,nota:no??q.nota});carica()};
+function passi(){const p=cur(),r=p&&p.riepilogo,e=p&&p.emissioni,err=S.schema.filter(c=>errore(c,V[c.id])).length,nf=S.schema.filter(c=>(F[c.id]||{}).fonte).length,nm=p?S.schema.filter(c=>String(p.valori[c.id])!==String(V[c.id])).length:0;
+  const s=(id,cl,t)=>{$(id).className='s '+cl;$(id).textContent=t;$(id).title=t};
+  s('#ss1',err?'ba':nm?'wa':'ok',err?`${err} input da correggere`:`${nm?nm+' modificati · ':''}${S.schema.length} input · ${nf} con fonte`);
+  s('#ss2',!r?'':r.ok?'ok':'ba',!r?'nessuna versione':r.ok?`MTOM ${fmt(r.MTOM/1000,1)} t · converge`:'ARIEL non converge');
+  const lto=e&&e.ok&&e.lto,f3=p&&(p.f3_esito||(p.f3&&padre(p)&&padre(p).f3_esito));
+  s('#ss3',!e?'':!e.ok?'ba':lto?'ok':'wa',!e?'motore non calcolato':!e.ok?'errore nel calcolo':`${f3?'F3 '+f3.esito+' · ':''}${lto?'LTO calcolato':'LTO da fare (CRN)'}`);
+  s('#ss4',r&&r.ok?'':'',r&&r.ok?'numeri per CAD · AVL · sottosistemi':'servono i risultati del passo 2')}
+const padre=p=>p.f3&&S.prove.find(q=>q.id===p.f3.padre);
+function vai(s){STEP=s;document.querySelectorAll('.step').forEach(b=>b.classList.toggle('on',b.dataset.s===s));document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===s));
+  ['1','2','3','4','conf','serie'].forEach(x=>$('#v'+x).classList.toggle('hid',x!==s))}
+$('#steps').onclick=e=>{const b=e.target.closest('.step');if(b)vai(b.dataset.s)};
+document.querySelector('.tools').addEventListener('click',e=>{const b=e.target.closest('[data-tool]');if(b)vai(STEP===b.dataset.tool?'1':b.dataset.tool)});
+
+// ---------- 1 · input
+function errore(c,x){if(x===''||x==null||(c.scelte?false:isNaN(x)))return'manca il valore';if(c.scelte)return'';if(c.min!=null&&(x<c.min||x>c.max))return`ammesso da ${fv(c.min)} a ${fv(c.max)}`;if(c.positivo&&x<=0)return'deve essere positivo';if(c.intero&&x!=Math.round(x))return'deve essere intero';return''}
+const difReg=c=>{const f=F[c.id];return f&&f.valore!=null&&f.valore!==''&&String(f.valore)!==String(V[c.id])};
+function campi(){const p=cur(),per={};S.schema.forEach(c=>{const g=info(c)[0];(per[g]=per[g]||[]).push(c)});
+  const mod=c=>p&&String(p.valori[c.id])!==String(V[c.id]),nmod=S.schema.filter(mod).length,nreg=S.schema.filter(difReg).length,nerr=S.schema.filter(c=>errore(c,V[c.id])).length;
+  $('#filtri').innerHTML=[['tutti','Tutti'],['mod',`Modificati (${nmod})`],['reg',`Diversi dal registro (${nreg})`],['err',`Da correggere (${nerr})`]].map(([k,t])=>`<button class="chip ${FIL===k?'on':''}" data-f="${k}">${t}</button>`).join('');
+  const q=Q.trim().toLowerCase(),vis=c=>(!q||(labTxt(c)+' '+(info(c)[2]||'')+' '+c.chiave).toLowerCase().includes(q))&&(FIL==='tutti'||(FIL==='mod'&&mod(c))||(FIL==='reg'&&difReg(c))||(FIL==='err'&&errore(c,V[c.id])));
+  $('#campi').innerHTML=[...GR,['altro','Altri input']].filter(([g])=>per[g]&&per[g].some(vis)).map(([g,t])=>{const cs=per[g].filter(vis);
+    return `<div class="card"><h2>${t}<span class="r hint">${cs.length}</span></h2><table><tbody>${cs.map(c=>{const x=V[c.id],m=mod(c),e=errore(c,x),[,nm,hint]=info(c),u=un(c),f=F[c.id]||{},dr=difReg(c);
+      const inp=c.scelte?`<select data-id="${esc(c.id)}" aria-label="${esc(labTxt(c))}">${c.scelte.map(s=>`<option value="${s}" ${String(x)===s?'selected':''}>${s==='1'?'sì':'no'}</option>`).join('')}</select>`:`<input type="number" step="any" data-id="${esc(c.id)}" value="${x??''}" aria-label="${esc(labTxt(c))}">`;
+      const tip=[f.fonte&&('Fonte: '+f.fonte),f.file,f.commento,dr&&('Nel registro: '+fv(f.valore)),'Chiave ARIEL: '+c.chiave].filter(Boolean).join('\n');
+      const pic=typeof x==='number'&&x&&Math.abs(x)<1e-3?` = ${fmt(x/1e-5,3)}·10⁻⁵`:'';
+      return `<tr class="${m?'chg':''} ${e?'err':''}"><td class="lab">${nm}${hint||pic?`<small>${esc(hint)}${pic}</small>`:''}${m?`<span class="msg c">nella versione aperta: ${esc(sc(c,p.valori[c.id]))} <button class="btn lnk" data-reset="${esc(c.id)}">ripristina</button></span>`:''}${e?`<span class="msg ba">${esc(e)}</span>`:''}</td>
+        <td><div class="inp">${inp}</div></td><td class="u">${esc(u)}</td><td style="text-align:right"><span class="src ${dr?'dif':''}" title="${esc(tip)}" tabindex="0">${dr?'≠ registro':esc(FONTE[f.fonte]||f.fonte||'—')}</span></td></tr>`}).join('')}</tbody></table></div>`}).join('')||'<p class="hint">Nessun input corrisponde.</p>';
+  $('#calc').disabled=BUSY||!!S.job||nerr>0;passi()}
 $('#campi').addEventListener('change',e=>{const t=e.target,id=t.dataset.id;if(!id)return;const c=S.schema.find(c=>c.id===id);V[id]=c.scelte?t.value:(t.value===''?'':Number(t.value));campi()});
-$('#campi').addEventListener('click',e=>{const id=e.target.dataset.reset;if(id){V[id]=rif().valori[id];campi()}});
-$('#rifbox').addEventListener('click',e=>{if(e.target.id==='rall'){V={...rif().valori};campi()}});
+$('#campi').addEventListener('click',e=>{const id=e.target.dataset.reset;if(id){V[id]=cur().valori[id];campi()}});
+$('#filtri').addEventListener('click',e=>{const k=e.target.dataset.f;if(k){FIL=k;campi()}});
 $('#cerca').addEventListener('input',e=>{Q=e.target.value;campi()});
-async function calcola(valori,nome,nota){BUSY=true;campi();const t0=Date.now(),tm=setInterval(()=>$('#timer').textContent=`ARIEL sta calcolando… ${((Date.now()-t0)/1000).toFixed(0)} s`,250);
-  try{return await api('/api/calcola',{valori,nome,nota})}finally{clearInterval(tm);$('#timer').textContent='';BUSY=false}}
-$('#calc').onclick=async()=>{const p=await calcola(V,$('#nome').value||'prova',$('#nota').value);if(p.id){$('#nome').value='';$('#nota').value=''}await carica(p.id||SEL);if(!p.id){$('#perr').classList.remove('hid');$('#perr').textContent=p.riepilogo.errore}tab('prova')};
-function delta(k,x,y,d,div){if(x==null||y==null)return'&nbsp;';const dd=x-y;if(dd===0)return'uguale al riferimento';
+$('#daver').onclick=()=>{if(cur()){V={...cur().valori};campi()}};
+$('#dareg').onclick=()=>{let n=0;S.schema.forEach(c=>{if(difReg(c)){V[c.id]=c.scelte?String(F[c.id].valore):Number(F[c.id].valore);n++}});campi();if(!n)alert(Object.keys(F).length?'Gli input sono già uguali al registro.':'Registro parametri non trovato.')};
+async function calcola(valori,nome,nota){BUSY=true;campi();const t0=Date.now(),tm=setInterval(()=>$('#timer').textContent=`ARIEL calcola… ${((Date.now()-t0)/1000).toFixed(0)} s`,250);
+  try{return await api('/api/calcola',{valori,nome,nota})}finally{clearInterval(tm);$('#timer').textContent='5–15 s';BUSY=false}}
+$('#calc').onclick=async()=>{const p=await calcola(V,$('#nome').value||'versione',$('#nota').value);if(p.id){$('#nome').value='';$('#nota').value='';V={...p.valori}}await carica(p.id||SEL);vai('2');if(!p.id){$('#perr').classList.remove('hid');$('#perr').textContent=p.riepilogo.errore}};
+
+// ---------- 2 · velivolo
+function delta(x,y,d,div){if(x==null||y==null)return'';const dd=x-y;if(dd===0)return'uguale al riferimento';
   return `<span class="${dd>0?'up':'dn'}">${dd>0?'+':''}${fmt(dd/(div||1),d)}${y?` (${dd/y*100>0?'+':''}${fmt(dd/y*100,1)} %)`:''}</span>`}
-function prova(){const p=S.prove.find(p=>p.id===SEL),R=rif();$('#perr').classList.add('hid');emBox(p);
-  if(!p){$('#ptitle').textContent='Nessuna prova: imposta gli input e premi Calcola.';$('#pdata').textContent=$('#pvs').textContent='';$('#kpis').innerHTML=$('#bars').innerHTML=$('#imgs').innerHTML='';$('#barbox').classList.add('hid');return}
-  const r=p.riepilogo,cmp=R&&R.id!==p.id&&R.riepilogo.ok;$('#barbox').classList.remove('hid');
-  $('#ptitle').innerHTML=(p.rif?'<span class="star">★</span> ':'')+esc(p.nome);$('#pdata').textContent=`${p.data}${p.nota?' · '+p.nota:''}${r.secondi?' · calcolata in '+r.secondi+' s':''}`;
-  $('#pvs').innerHTML=cmp?`differenze rispetto al riferimento <span class="star">★</span> ${esc(R.nome)}`:p.rif?'questa è la prova di riferimento':'';
-  if(!r.ok){$('#perr').classList.remove('hid');$('#perr').textContent='ARIEL si è fermato:\n'+r.errore;$('#kpis').innerHTML=$('#bars').innerHTML=$('#imgs').innerHTML='';$('#barbox').classList.add('hid');return}
-  $('#kpis').innerHTML=KG.map(([g,ks])=>`<div class="kgrp"><h3>${g}</h3><div class="kpis">${ks.map(([k,l,u,d,div])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${fmt(r[k]==null?null:r[k]/(div||1),d)}${u?`<small>${u}</small>`:''}</div><div class="d">${cmp?delta(k,r[k],R.riepilogo[k],d,div):'&nbsp;'}</div></div>`).join('')}${g==='Ala e spinta'?`<div class="kpi"><div class="l">Vincolo che fissa la spinta</div><div class="v" style="font-size:16px">${esc(tv(r.attivo))}</div></div>`:''}</div></div>`).join('');
-  const vs=r.vincoli||{},mx=Math.max(...Object.values(vs),.01);$('#bars').innerHTML=Object.entries(vs).map(([k,x])=>`<div class="${x===r.TW?'act':''}"><span>${esc(tv(k))}</span><i style="width:${x/mx*100}%"></i><b>${fmt(x,2)}</b></div>`).join('')||'<span class="note">Dati dei vincoli non disponibili.</span>';
-  $('#imgs').innerHTML=IMG.map(([f,t])=>`<figure><img src="/prove/${encodeURIComponent(p.id)}/outputs/${f.split('/').map(encodeURIComponent).join('/')}" alt="${t}"><figcaption>${t}</figcaption></figure>`).join('')}
-// motore ed emissioni (opzione 3 di ARIEL): tabella per fase del foglio Segments di Engine_and_emissions.xlsx
-const FASI={'Take-off':'Decollo','2nd segment (climb-out)':'2° segmento','Subsonic climb':'Salita subsonica','Subsonic cruise':'Crociera subsonica','Supersonic climb and acceleration':'Salita e accelerazione supersonica','Supersonic cruise':'Crociera supersonica','Descent':'Discesa','Approach':'Avvicinamento','Landing and taxi-in (idle)':'Atterraggio e rullaggio','Mission total':'Totale missione'};
-const EMK=[['Combustibile','Combustibile','t',1,1000],['CO₂','CO₂','t',1,1000],['NOx, equilibrio','NOx, equilibrio','kg',0],['NOx, P3-T3','NOx, P3-T3','kg',0],['CO, P3-T3','CO, P3-T3','kg',1]];
-// confronto dei motori: candidati, vincoli (decisi da Alex), migliore
+function velivolo(){const p=cur(),R=rif();$('#perr').classList.add('hid');
+  if(!p){$('#vel').innerHTML='<div class="card empty">Nessuna versione: imposta gli input al passo 1 e premi «Calcola il velivolo».</div>';return}
+  const r=p.riepilogo,cmp=R&&R.id!==p.id&&R.riepilogo.ok;
+  let h=`<div class="bar"><b>${p.rif?'<span class="star">★</span> ':''}${esc(p.nome)}</b><span class="hint">${esc(p.data)}${p.nota?' · '+esc(p.nota):''}${r.secondi?' · '+r.secondi+' s':''}</span><span class="sp"></span><span class="hint">${cmp?`differenze dal riferimento <span class="star">★</span> ${esc(R.nome)}`:p.rif?'è la versione di riferimento':'nessun riferimento ★ (si sceglie in «Versioni e confronto»)'}</span></div>`;
+  if(!r.ok){$('#perr').classList.remove('hid');$('#perr').textContent='ARIEL si è fermato:\n'+r.errore;$('#vel').innerHTML=h;return}
+  h+=`<div class="kpis">${KP.map(([k,l,u,d,div])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${fmt(r[k]==null?null:r[k]/(div||1),d)}${u?`<small>${u}</small>`:''}</div><div class="d">${cmp?delta(r[k],R.riepilogo[k],d,div):''}</div></div>`).join('')}</div>`;
+  const vs=r.vincoli||{},mx=Math.max(...Object.values(vs),.01);
+  h+=`<div class="grid2"><div class="card"><h2>Chi fissa la spinta<span class="r hint">T/W richiesto da ogni fase</span></h2><div class="bars">${Object.entries(vs).sort((a,b)=>b[1]-a[1]).map(([k,x])=>`<div class="${x===r.TW?'act':''}"><span>${esc(tv(k))}</span><i style="width:${x/mx*100}%"></i><b class="num">${fmt(x,2)}</b></div>`).join('')||'<span class="hint">Dati dei vincoli non disponibili.</span>'}</div>
+    <p class="hint" style="margin-bottom:0">Dimensiona: <b>${esc(tv(r.attivo))}</b>. Il vincolo più alto fissa la spinta al carico alare di progetto.</p></div>
+    <div class="card"><h2>${IMG[0][1]}</h2><figure><img src="${out(p,IMG[0][0])}" alt="${IMG[0][1]}"></figure></div></div>
+    <div class="grid3">${IMG.slice(1).map(([f,t])=>`<div class="card"><h2>${t}</h2><figure><img src="${out(p,f)}" alt="${t}"></figure></div>`).join('')}</div>`;
+  $('#vel').innerHTML=h}
+
+// ---------- 3 · motore
+const FASI={'Take-off':'Decollo','2nd segment (climb-out)':'2° segmento','Subsonic climb':'Salita sub','Subsonic cruise':'Crociera sub','Supersonic climb and acceleration':'Salita sup','Supersonic cruise':'Crociera sup','Descent':'Discesa','Approach':'Avvicinamento','Landing and taxi-in (idle)':'Atterraggio e rullaggio','Mission total':'Totale'};
+const EMK=[['Combustibile','Combustibile','t',1,1000],['CO₂','CO₂','t',1,1000],['NOx, equilibrio','NOx all\'equilibrio','kg',0],['NOx, P3-T3','NOx P3-T3','kg',0],['CO, P3-T3','CO P3-T3','kg',1]];
 let M={candidati:[],vincoli:[],migliore:null,testo:''};
-const SI=x=>x===true?'<span style="color:var(--ok)">✅</span>':x===false?'<span style="color:var(--bad)">❌</span>':'<span class="note">—</span>';
+const SI=x=>x===true?'<span class="tag ok ok">OK</span>':x===false?'<span class="tag ba ba">NO</span>':'<span class="hint">—</span>';
 const GRM=[['MTOM','MTOM [t]',1,1000],['fuel','Combustibile di missione [t]',1,1000],['TSFC','TSFC crociera [10⁻⁵ kg/(N·s)]',3,1e-5],['co2_pkm','CO₂ per passeggero·km [kg]',3],
-  ['spinta_decollo','Spinta al decollo disponibile / richiesta',2],['F00','Spinta statica al decollo F00 [kN]',0],['T_richiesta','Spinta richiesta per motore [kN]',0],
+  ['spinta_decollo','Spinta al decollo disponibile / richiesta',2],['F00','Spinta statica F00 [kN]',0],['T_richiesta','Spinta richiesta per motore [kN]',0],
   ['nox_lto','NOx LTO / limite ICAO',2],['fumo','Fumo (SN) / limite ICAO',2],['fan','Diametro del fan [m]',3],['tt4','Tt4 massimo [K]',0]];
-async function motori(){M=await api('/api/motori?criterio='+encodeURIComponent($('#criterio').value));confrontoMotori();vincoliBox()}
+async function motoriDati(){M=await api('/api/motori?criterio='+encodeURIComponent($('#criterio').value))}
+$('#criterio').onchange=async()=>{await motoriDati();confrontoMotori()};
 function confrontoMotori(){const C=M.candidati;
-  if(!C.length){$('#confronto').innerHTML='<p class="note">Nessun motore calcolato: scegli una prova qui sotto e lancia l\'analisi semplice.</p>';return}
-  const th=C.map(c=>`<th style="white-space:normal;min-width:110px;${c.id===M.migliore?'background:var(--chg);color:var(--chgfg)':''}"><button class="nm" data-m="${esc(c.id)}">${c.id===M.migliore?'<span class="star">★</span> ':''}${esc(c.nome)}</button><br><span class="note">${c.tipo==='crn'?'con CRN':'analisi semplice'}${c.riusato_da?' · riusato':''}</span></th>`).join('');
-  const td=(c,h)=>`<td style="${c.id===M.migliore?'background:var(--chg)':''}">${h}</td>`;
-  let h=`<table><tr><th></th>${th}</tr><tr><th colspan="${C.length+1}" style="text-align:left">Vincoli</th></tr>`;
-  h+=M.vincoli.map(v=>`<tr><td>${esc(v.nome)} <span class="note">${v.min!=null?'≥ '+fv(v.min):''}${v.max!=null?'≤ '+fv(v.max):''}</span></td>${C.map(c=>td(c,SI(c.verifica[v.id])+' '+fmt(c.grandezze[v.id],2))).join('')}</tr>`).join('');
-  h+=`<tr><th colspan="${C.length+1}" style="text-align:left">Grandezze</th></tr>`+GRM.map(([k,l,d,div])=>`<tr><td>${l}</td>${C.map(c=>{const x=c.grandezze[k];return td(c,fmt(x==null?null:x/(div||1),d))}).join('')}</tr>`).join('');
+  if(!C.length){$('#confronto').innerHTML='<p class="hint">Nessun motore calcolato: lancia l\'analisi semplice qui sopra.</p>';return}
+  const best=c=>c.id===M.migliore?'background:var(--chg)':'';
+  const th=C.map(c=>`<th style="white-space:normal;min-width:120px;text-align:right;${best(c)}"><button class="nm" data-m="${esc(c.id)}">${c.id===M.migliore?'<span class="star">★</span> ':''}${esc(c.nome)}</button><br><span class="hint">${c.tipo==='crn'?'con CRN':'analisi semplice'}${c.riusato_da?' · riusato':''}</span></th>`).join('');
+  const td=(c,h)=>`<td class="n" style="${best(c)}">${h}</td>`;
+  let h=`<table class="h"><tr><th></th>${th}</tr><tr><th class="sec" colspan="${C.length+1}">Vincoli</th></tr>`;
+  h+=M.vincoli.map(v=>`<tr><td>${esc(v.nome)} <span class="hint">${v.min!=null?'≥ '+fv(v.min):''}${v.max!=null?'≤ '+fv(v.max):''}</span></td>${C.map(c=>td(c,fmt(c.grandezze[v.id],2)+' '+SI(c.verifica[v.id]))).join('')}</tr>`).join('');
+  h+=`<tr><th class="sec" colspan="${C.length+1}">Grandezze</th></tr>`+GRM.map(([k,l,d,div])=>`<tr><td>${l}</td>${C.map(c=>{const x=c.grandezze[k];return td(c,fmt(x==null?null:x/(div||1),d))}).join('')}</tr>`).join('');
   const dif=[...new Set(C.flatMap(c=>Object.keys(c.diversi)))];
-  if(dif.length)h+=`<tr><th colspan="${C.length+1}" style="text-align:left">Input diversi dal primo candidato (${dif.length})</th></tr>`+dif.map(k=>{const sc_=S.schema.find(s=>s.id===k);return `<tr><td>${sc_?lab(sc_):esc(k)}</td>${C.map(c=>td(c,k in c.diversi?`<b>${esc(fv(c.diversi[k]))}</b>`:'=')).join('')}</tr>`}).join('');
-  $('#confronto').innerHTML=h+`</table><p class="note">${M.migliore?'<span class="star">★</span> ':''}${esc(M.testo)}</p>`}
-function vincoliBox(){$('#vincoli').innerHTML=`<table><tr><th>Vincolo</th><th>minimo</th><th>massimo</th></tr>${M.vincoli.map((v,i)=>`<tr><td>${esc(v.nome)}</td><td><input type="number" step="any" data-vi="${i}" data-k="min" value="${v.min??''}" style="width:90px"></td><td><input type="number" step="any" data-vi="${i}" data-k="max" value="${v.max??''}" style="width:90px"></td></tr>`).join('')}</table><button class="btn pri" id="vsalva" style="margin-top:8px">Salva i vincoli</button> <span class="note" id="vmsg"></span>`}
-$('#criterio').onchange=motori;
+  if(dif.length)h+=`<tr><th class="sec" colspan="${C.length+1}">Input diversi dal primo (${dif.length})</th></tr>`+dif.map(k=>{const s=S.schema.find(s=>s.id===k);return `<tr><td>${s?lab(s):esc(k)}</td>${C.map(c=>td(c,k in c.diversi?`<b>${esc(fv(c.diversi[k]))}</b>`:'=')).join('')}</tr>`}).join('');
+  $('#confronto').innerHTML=h+`</table><p class="hint">${M.migliore?'<span class="star">★</span> ':''}${esc(M.testo)}</p>`}
+function vincoliBox(){$('#vincoli').innerHTML=`<table style="max-width:520px"><tr><th>Vincolo</th><th>minimo</th><th>massimo</th></tr>${M.vincoli.map((v,i)=>`<tr><td>${esc(v.nome)}</td><td class="n"><input type="number" step="any" data-vi="${i}" data-k="min" value="${v.min??''}" style="width:90px" aria-label="minimo ${esc(v.nome)}"></td><td class="n"><input type="number" step="any" data-vi="${i}" data-k="max" value="${v.max??''}" style="width:90px" aria-label="massimo ${esc(v.nome)}"></td></tr>`).join('')}</table><button class="btn sm" id="vsalva" style="margin-top:8px">Salva i vincoli</button> <span class="hint" id="vmsg"></span>`}
 $('#vincoli').addEventListener('click',async e=>{if(e.target.id!=='vsalva')return;const V2=M.vincoli.map(v=>({...v}));
   document.querySelectorAll('#vincoli input').forEach(i=>{const v=V2[i.dataset.vi];v[i.dataset.k]=i.value===''?null:Number(i.value)});
-  const r=await api('/api/vincoli',V2);$('#vmsg').textContent=r.errore||'salvati';motori()});
-$('#confronto').addEventListener('click',e=>{const id=e.target.closest('[data-m]')?.dataset.m;if(!id)return;SEL=id;prova();$('#embox').scrollIntoView({behavior:'smooth'})});
-// profilo completo di un candidato (vista A)
-function emBox(p){const b=$('#embox'),ok=S.prove.filter(q=>q.riepilogo.ok);
-  const scegli=`<div class="row" style="margin-bottom:12px"><span class="note">Velivolo della prova</span><select id="emsel" style="max-width:420px">${p&&!p.riepilogo.ok?`<option selected>${esc(p.nome)} (non converge)</option>`:''}${ok.map(q=>`<option value="${esc(q.id)}" ${p&&q.id===p.id?'selected':''}>${q.rif?'★ ':''}${esc(q.nome)} · ${esc(q.data)}${q.emissioni&&q.emissioni.ok?' · motore calcolato':''}</option>`).join('')}</select></div>`;
-  if(!p||!p.riepilogo.ok){b.innerHTML=`<h2>Profilo del motore</h2>${ok.length?scegli+'<p class="note">Scegli una prova che converge: il motore si progetta sul suo velivolo.</p>':'<p class="note">Nessuna prova converge: calcola prima un velivolo nella colonna di sinistra.</p>'}`;return}
-  const J=S.job,e=p.emissioni,mio=J&&J.id===p.id,dis=J?'disabled':'';
-  let h=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Profilo del motore</h2><span class="row">
-    <button class="btn ${e&&e.ok?'':'pri'}" data-go="semplice" ${dis} title="L'exe si ferma dopo il motore: niente CRN">Analisi semplice (~15 min)</button>
-    <button class="btn" data-go="crn" ${dis} title="Opzione 3 completa, con la CRN e il ciclo LTO contro i limiti ICAO">Con CRN (oltre 1 h)</button>
-    <button class="btn" data-go="f3" ${dis} title="sfc ← TSFC del motore, nuovo velivolo, nuovo motore… finché la sfc cambia meno dell'1 %">Anello F3</button></span></div>`+scegli;
-  if(mio)h+=`<p class="note">ARIEL sta lavorando su questa prova (${J.tipo==='f3'?'anello F3, giro '+((J.f3||{}).giro??0):J.tipo==='crn'?'motore + CRN':'analisi semplice'}) dalle ${new Date(J.inizio*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}. Non chiudere la finestra nera della dashboard e non sospendere il PC.</p>`;
-  else if(J)h+='<p class="note">ARIEL sta lavorando su un\'altra prova: aspetta che finisca.</p>';
-  const f3=p.f3_esito;if(f3)h+=`<div class="box" style="margin:8px 0"><b>Anello F3: ${esc(f3.esito)}</b><br><span class="note">sfc per giro [10⁻⁵ kg/(N·s)]: ${f3.sfc.map(x=>fmt(x/1e-5,3)).join(' → ')} · prove: ${f3.prove.length}</span></div>`;
-  if(p.f3)h+=`<p class="note">Giro ${p.f3.giro} dell'anello F3 partito da un'altra prova.</p>`;
-  if(!e&&!mio)h+='<p class="note">Il motore non è ancora calcolato. «Analisi semplice» progetta il motore sul velivolo e dà spinte, TSFC ed emissioni all\'equilibrio per fase (circa 15 min). «Con CRN» aggiunge la chimica a tempo finito e il ciclo LTO contro i limiti ICAO (oltre un\'ora).</p>';
-  if(e&&!e.ok)h+=`<div class="box errbox">ARIEL si è fermato (${esc(e.data)}):\n${esc(e.errore)}</div>`;
-  if(e&&e.ok){const g=(M.candidati.find(c=>c.id===p.id)||{}).grandezze||{},c=e.carta||{},l=e.lto;
-    const sfc=p.valori['flight_expected_performances/sfc [(kg/s)/N]'],tot=n=>{const r=e.righe.find(r=>r.nome===n);return r?r.v[r.v.length-1]:null};
-    const ver=(ok,t)=>`<div>${ok===true?'✅':ok===false?'❌':'⚠'} ${t}</div>`;
-    h+=`<div class="box" style="margin:8px 0">${[
-      c.TSFC?ver(Math.abs(c.TSFC-sfc)<0.01*sfc||null,`TSFC del motore ${fmt(c.TSFC/1e-5,3)} contro sfc data ${fmt(sfc/1e-5,3)} ·10⁻⁵ kg/(N·s) (${c.TSFC<sfc?'':'+'}${fmt((c.TSFC/sfc-1)*100,1)} %)${Math.abs(c.TSFC-sfc)<0.01*sfc?' · coerente':' · serve l’anello F3'}`):'',
-      ver(g.spinta_decollo==null?null:g.spinta_decollo>=1,`Spinta al decollo ${fmt(g.F00??g.Fn_decollo,0)} kN ${g.F00?'(statica, CRN)':'(segmento di decollo)'} contro ${fmt(g.T_richiesta,0)} kN richiesti: ${fmt((g.spinta_decollo||0)*100,0)} %`),
-      l?ver(l.NOx_gkN<=l.NOx_limite&&l.SN<=l.SN_limite,`LTO contro ICAO: NOx ${fmt(l.NOx_gkN,1)}/${fmt(l.NOx_limite,1)} g/kN, CO ${fmt(l.CO_gkN,1)}/${fmt(l.CO_limite,1)}, HC ${fmt(l.HC_gkN,2)}/${fmt(l.HC_limite,1)}, fumo SN ${fmt(l.SN,1)}/${fmt(l.SN_limite,1)}${l.parziale?' · ciclo LTO parziale':''}`):ver(null,'LTO contro i limiti ICAO: serve la CRN')].join('')}</div>`;
-    if(c.BPR!=null)h+=`<h3>Carta d'identità</h3><div class="kpis" style="margin-bottom:14px">${[['BPR',c.BPR,'',2],['OPR',c.OPR,'',1],['Tt4',c.Tt4,'K',0],['Fan',c.fan,'m',3],['Portata d\'aria',c.portata,'kg/s',1],['Spinta in crociera',c.Fn_crociera,'kN',1],['Punto di progetto',null,'M '+fv(c.mach)+' · '+fmt(c.quota/1000,1)+' km',0],['Combustibile',null,c.combustibile||'—',0]].map(([n,x,u,d])=>`<div class="kpi"><div class="l">${n}</div><div class="v" style="${x==null?'font-size:15px':''}">${x==null?esc(u):fmt(x,d)+(u?`<small>${u}</small>`:'')}</div></div>`).join('')}</div>
-      ${(c.vincoli||[]).length?`<p class="note">Vincoli dell'ottimizzatore: ${c.vincoli.map(v=>`${esc(v.nome)} ${fmt(v.valore,3)}${v.limite!=null?' (max '+fv(v.limite)+')':''} ${esc(v.stato)}`).join(' · ')}</p>`:''}`;
-    h+=`<p class="note">Calcolato il ${esc(e.data)}${e.secondi?' in '+Math.round(e.secondi/60)+' min':''} · ${e.tipo==='crn'?'con CRN':'analisi semplice (senza CRN)'}${e.riusato_da?' · riusato dalla prova '+esc(e.riusato_da):''}. Equilibrio chimico = limite superiore degli NOx; P3-T3 = correlazione.</p>
-    <div class="kpis" style="margin-bottom:14px">${EMK.map(([n,lb,u,d,div])=>{const x=tot(n);return `<div class="kpi"><div class="l">${lb}, missione</div><div class="v">${fmt(x==null?null:x/(div||1),d)}<small>${u}</small></div></div>`}).join('')}</div>
-    <div style="overflow-x:auto"><table><tr><th></th>${e.fasi.map(f=>`<th style="white-space:normal;min-width:70px">${esc(FASI[f]||f)}</th>`).join('')}</tr>`;
-    let gr='';for(const r of e.righe){if(r.gruppo!==gr){gr=r.gruppo;h+=`<tr><th colspan="${e.fasi.length+1}" style="text-align:left">${esc(gr)}</th></tr>`}
-      const brutto=r.nome.startsWith('P3-T3 fuori')?'Yes':'No',sn=x=>`<span style="${x===brutto?'color:var(--warn);font-weight:650':''}">${x==='Yes'?'sì':'no'}</span>`;
-      h+=`<tr><td>${esc(r.nome)}${r.u?' ['+esc(r.u)+']':''}</td>${r.v.map((x,i)=>`<td style="${i===r.v.length-1?'font-weight:650':''}">${x==='Yes'||x==='No'?sn(x):fmt(x,r.d)}</td>`).join('')}</tr>`}
-    h+='</table></div>';
-    if(l&&l.grafico)h+=`<div class="imgs" style="margin-top:12px"><figure><img src="/prove/${encodeURIComponent(p.id)}/outputs/${l.grafico.split('/').map(encodeURIComponent).join('/')}" alt="LTO contro limiti ICAO"><figcaption>Ciclo LTO contro i limiti ICAO (CRN)</figcaption></figure></div>`;
-    h+='<p class="note">File completi nella cartella della prova: outputs/Layer1/Engine_and_emissions.xlsx e outputs/_work/Layer1/crn_case/.</p>'}
+  const r=await api('/api/vincoli',V2);$('#vmsg').textContent=r.errore||'salvati';await motoriDati();confrontoMotori();vincoliBox()});
+$('#confronto').addEventListener('click',e=>{const id=e.target.closest('[data-m]')?.dataset.m;if(id){apri(id);window.scrollTo({top:0,behavior:'smooth'})}});
+const ver=(ok,t)=>`<div class="vr">${ok===true?'<span class="tag ok ok">OK</span>':ok===false?'<span class="tag ba ba">NO</span>':'<span class="tag wa wa">DA FARE</span>'}<div>${t}</div></div>`;
+function emBox(){const b=$('#embox'),p=cur();
+  if(!p||!p.riepilogo.ok){b.innerHTML=`<div class="card empty">${p?'Questa versione non converge: il motore si progetta solo su un velivolo calcolato.':'Calcola prima un velivolo al passo 1.'}</div>`;return}
+  const J=S.job,e=p.emissioni,mio=J&&J.id===p.id,dis=J?'disabled':'',f3=p.f3_esito||(padre(p)||{}).f3_esito;
+  let h=`<div class="bar"><b>Motore di questa versione</b><span class="hint">turbofan a flussi miscelati del modello di ARIEL${e&&e.carta&&e.carta.combustibile?' · '+esc(e.carta.combustibile):''}</span><span class="sp"></span>
+    <button class="btn ${e&&e.ok?'':'pri'}" data-go="semplice" ${dis} title="L'exe si ferma dopo il motore: niente CRN">Analisi semplice <span class="hint">~15 min</span></button>
+    <button class="btn" data-go="crn" ${dis} title="Opzione 3 completa: CRN e ciclo LTO contro i limiti ICAO">Con CRN e LTO <span class="hint">&gt; 1 h</span></button>
+    <button class="btn" data-go="f3" ${dis} title="sfc ← TSFC del motore × fattore, nuovo velivolo, nuovo motore… finché la sfc cambia meno dell'1 %">Anello F3</button>
+    <label class="hint" title="Moltiplica il TSFC del motore prima di usarlo come sfc. 1,0526 = 1/(1−0,05): perdite di installazione del 5 % (Mattingly, decisione D1)">fattore TSFC <input id="fatt" class="num" type="number" step="0.0001" value="${(f3&&f3.fattore)?+f3.fattore.toFixed(4):1.0526}" style="width:84px"></label></div>`;
+  if(mio)h+=`<div class="card"><b>ARIEL sta lavorando su questa versione</b> (${J.tipo==='f3'?'anello F3, giro '+((J.f3||{}).giro??0):J.tipo==='crn'?'motore e CRN':'analisi semplice'}) dalle ${new Date(J.inizio*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}. <span class="hint">Non chiudere la finestra nera e non sospendere il PC.</span></div>`;
+  else if(J)h+='<div class="card hint">ARIEL sta lavorando su un\'altra versione: aspetta che finisca.</div>';
+  if(!e&&!mio){b.innerHTML=h+`<div class="card empty">Motore non ancora calcolato.<br>«Analisi semplice» progetta il motore sul velivolo: spinte, TSFC ed emissioni all'equilibrio per fase (circa 15 min).<br>«Con CRN e LTO» aggiunge la chimica a tempo finito e il ciclo LTO contro i limiti ICAO (oltre 1 h).</div>`;return}
+  if(e&&!e.ok){b.innerHTML=h+`<div class="card errbox">ARIEL si è fermato (${esc(e.data)}):\n${esc(e.errore)}</div>`;return}
+  if(!e){b.innerHTML=h;return}
+  const g=(M.candidati.find(c=>c.id===p.id)||{}).grandezze||{},c=e.carta||{},l=e.lto,sfc=p.valori[SFC],fat=(f3&&f3.fattore)||1,tsu=c.TSFC?c.TSFC*fat:null;
+  const tot=n=>{const r=e.righe.find(r=>r.nome===n);return r?r.v[r.v.length-1]:null};
+  const coer=tsu&&Math.abs(tsu-sfc)<0.01*sfc;
+  h+=`<div class="grid2"><div class="card"><h2>Verdetto</h2>${[
+    f3?ver(f3.esito==='converge'?true:null,`Anello F3 <b>${esc(f3.esito)}</b>${fat!==1?' (fattore '+fmt(fat,4)+')':''}: sfc ${f3.sfc.map(x=>fmt(x/1e-5,3)).join(' → ')} ·10⁻⁵`):'',
+    tsu?ver(coer||null,`TSFC del motore${fat!==1?' × '+fmt(fat,4):''} = ${fmt(tsu/1e-5,3)} contro sfc usata ${fmt(sfc/1e-5,3)} ·10⁻⁵ kg/(N·s) (${tsu>sfc?'+':''}${fmt((tsu/sfc-1)*100,1)} %)${coer?': coerente':': serve l’anello F3'}`):'',
+    ver(g.spinta_decollo==null?null:g.spinta_decollo>=1,`Spinta al decollo ${fmt(g.F00??g.Fn_decollo,0)} kN ${g.F00?'(statica, CRN)':'(segmento di decollo)'} contro ${fmt(g.T_richiesta,0)} kN richiesti: ${fmt((g.spinta_decollo||0)*100,0)} %`),
+    l?ver(l.NOx_gkN<=l.NOx_limite&&l.SN<=l.SN_limite,`LTO contro ICAO: NOx ${fmt(l.NOx_gkN,1)}/${fmt(l.NOx_limite,1)} g/kN · CO ${fmt(l.CO_gkN,1)}/${fmt(l.CO_limite,1)} · HC ${fmt(l.HC_gkN,2)}/${fmt(l.HC_limite,1)} · fumo SN ${fmt(l.SN,1)}/${fmt(l.SN_limite,1)}${l.parziale?' · ciclo LTO parziale':''}`):ver(null,'LTO contro i limiti ICAO: serve «Con CRN e LTO»')].join('')}</div>`;
+  h+=`<div class="card"><h2>Carta d'identità</h2>${c.BPR!=null?`<table><tbody>${[['BPR · OPR',fmt(c.BPR,2)+' · '+fmt(c.OPR,1)],['Tt4',fmt(c.Tt4,0)+' K'],['Diametro del fan',fmt(c.fan,3)+' m'],['Portata d\'aria',fmt(c.portata,1)+' kg/s'],['Punto di progetto','M '+fv(c.mach)+' · '+fmt(c.quota/1000,1)+' km'],['Spinta in crociera',fmt(c.Fn_crociera,1)+' kN'],['TSFC di progetto (non installato)',fmt(c.TSFC/1e-5,3)+'·10⁻⁵ kg/(N·s)']].map(([a,x])=>`<tr><td>${a}</td><td class="n">${x}</td></tr>`).join('')}</tbody></table>`:'<p class="hint">Carta non disponibile.</p>'}
+    ${(c.vincoli||[]).length?`<p class="hint" style="margin-bottom:0">Vincoli dell'ottimizzatore: ${c.vincoli.map(v=>`${esc(v.nome)} ${fmt(v.valore,3)}${v.limite!=null?' (max '+fv(v.limite)+')':''} ${esc(v.stato)}`).join(' · ')}</p>`:''}</div></div>`;
+  h+=`<div class="kpis" style="margin-top:12px">${EMK.map(([n,lb,u,d,div])=>{const x=tot(n);return `<div class="kpi"><div class="l">${lb}, missione</div><div class="v">${fmt(x==null?null:x/(div||1),d)}<small>${u}</small></div></div>`}).join('')}</div>`;
+  h+=`<div class="card"><h2>Per fase di volo<span class="r hint">${e.tipo==='crn'?'con CRN':'analisi semplice'} · ${esc(e.data)}${e.secondi?' · '+Math.round(e.secondi/60)+' min':''}${e.riusato_da?' · riusato':''}</span></h2><div class="scrollx"><table class="h"><tr><th></th>${e.fasi.map(f=>`<th style="white-space:normal">${esc(FASI[f]||f)}</th>`).join('')}</tr>`;
+  let gr='';for(const r of e.righe){if(r.gruppo!==gr){gr=r.gruppo;h+=`<tr><th class="sec" colspan="${e.fasi.length+1}">${esc(gr)}</th></tr>`}
+    const brutto=r.nome.startsWith('P3-T3 fuori')?'Yes':'No',sn=x=>`<span class="${x===brutto?'wa':''}">${x==='Yes'?'sì':'no'}</span>`;
+    h+=`<tr><td>${esc(r.nome)}${r.u?' <span class="hint">['+esc(r.u)+']</span>':''}</td>${r.v.map((x,i)=>`<td class="n" style="${i===r.v.length-1?'font-weight:600':''}">${x==='Yes'||x==='No'?sn(x):fmt(x,r.d)}</td>`).join('')}</tr>`}
+  h+=`</table></div><p class="hint" style="margin-bottom:0">Equilibrio chimico = limite superiore degli NOx; P3-T3 = correlazione. File completi: outputs/Layer1/Engine_and_emissions.xlsx e outputs/_work/Layer1/crn_case/.</p></div>`;
+  if(l&&l.grafico)h+=`<div class="card"><h2>Ciclo LTO contro i limiti ICAO</h2><figure><img src="${out(p,l.grafico)}" alt="LTO contro i limiti ICAO"></figure></div>`;
   b.innerHTML=h}
-$('#embox').addEventListener('change',e=>{if(e.target.id==='emsel'&&e.target.value){SEL=e.target.value;prova()}});
-$('#embox').addEventListener('click',async e=>{const go=e.target.dataset.go;if(!go||!SEL)return;
-  const msg={semplice:'Analisi semplice del motore (circa 15 min, senza CRN)?',crn:'Motore con CRN (oltre un\'ora)?',f3:'Anello F3: sfc ← TSFC del motore, nuovo velivolo e nuovo motore, fino a 5 giri da circa 15 min ciascuno?'}[go];
+$('#embox').addEventListener('click',async e=>{const go=e.target.closest('[data-go]')?.dataset.go;if(!go||!SEL)return;const fat=+$('#fatt').value||1;
+  const msg={semplice:'Analisi semplice del motore (circa 15 min, senza CRN)?',crn:'Motore con CRN e ciclo LTO (oltre un\'ora)?',f3:`Anello F3 con fattore ${fmt(fat,4)}: sfc ← TSFC × fattore, nuovo velivolo e nuovo motore, fino a 5 giri da circa 15 min?`}[go];
   if(!confirm(msg+' Nel frattempo ARIEL non fa altri calcoli.'))return;
-  const r=go==='f3'?await api('/api/prova/'+encodeURIComponent(SEL)+'/f3',{}):await api('/api/prova/'+encodeURIComponent(SEL)+'/emissioni',{tipo:go});if(r.errore)alert(r.errore);carica()});
-document.addEventListener('click',e=>{if(e.target.matches('.imgs img')){const d=document.createElement('div');d.className='lb';d.innerHTML=`<img src="${e.target.src}">`;d.onclick=()=>d.remove();document.body.append(d)}});
-function lista(){if(!S.prove.length){$('#lista').innerHTML='<tr><td class="empty">Nessuna prova salvata.</td></tr>';confronto();return}
-  $('#lista').innerHTML='<tr><th></th><th class="l">Prova</th><th class="l">Nota</th><th>Data</th><th>MTOM [t]</th><th>S [m²]</th><th>T/W</th><th></th></tr>'+S.prove.map(p=>{const r=p.riepilogo;
-  return `<tr><td><input type="checkbox" data-c="${p.id}" ${CHK.has(p.id)?'checked':''} title="Spunta per confrontare"></td><td class="pn"><button class="nm" data-v="${p.id}">${p.rif?'<span class="star">★</span> ':''}${esc(p.nome)}</button></td><td class="pt">${esc(p.nota)}</td><td>${p.data}</td>
-  <td>${r.ok?fmt(r.MTOM/1000,1):'<span style="color:var(--bad)">non converge</span>'}</td><td>${r.ok?fmt(r.S,1):''}</td><td>${r.ok?fmt(r.TW,3):''}</td>
-  <td><div class="acts"><button class="btn sm ${p.rif?'on':''}" data-r="${p.id}" title="Usa questa prova come riferimento">★ ${p.rif?'riferimento':'usa come rif.'}</button><button class="btn sm" data-i="${p.id}" title="Copia gli input di questa prova nella colonna di sinistra">Usa input</button><button class="btn sm" data-n="${p.id}">Rinomina</button><button class="btn sm" data-x="${p.id}" title="Cancella la prova">Elimina</button></div></td></tr>`}).join('');confronto()}
-$('#lista').addEventListener('click',async e=>{const t=e.target.closest('[data-v],[data-c],[data-r],[data-i],[data-n],[data-x]');if(!t)return;const d=t.dataset,p=id=>S.prove.find(x=>x.id===id);
-  if(d.v){SEL=d.v;prova();tab('prova')}
+  const r=go==='f3'?await api('/api/prova/'+encodeURIComponent(SEL)+'/f3',{fattore:fat}):await api('/api/prova/'+encodeURIComponent(SEL)+'/emissioni',{tipo:go});if(r.errore)alert(r.errore);carica()});
+
+// ---------- 4 · uscite (results.yaml della versione)
+async function risultati(p){if(RES[p.id])return RES[p.id];const t=await (await fetch(out(p,'Layer1/results.yaml'))).text(),o={};
+  t.split(/\r?\n/).forEach(l=>{const m=l.match(/^([^:#][^:]*):\s*(.*)$/);if(m){const x=Number(m[2]);o[m[1].trim()]=m[2]!==''&&!isNaN(x)?x:m[2].trim()}});return RES[p.id]=o}
+const vk=(p,k)=>{const c=S.schema.find(c=>chiave(c)===k);return c?p.valori[c.id]:null};
+async function uscite(){const p=cur(),b=$('#usc');if(!p||!p.riepilogo.ok){b.innerHTML='<div class="card empty">Servono i risultati di un velivolo che converge (passo 2).</div>';return}
+  let y={};try{y=await risultati(p)}catch(e){}
+  if(cur()!==p)return;
+  const Y=k=>y[k],c=(p.emissioni&&p.emissioni.ok&&p.emissioni.carta)||{},g=(M.candidati.find(x=>x.id===p.id)||{}).grandezze||{},pax=vk(p,'passenger_number'),mp=vk(p,'passenger_weight');
+  const tip=(r,t)=>r&&t!=null&&r!==''?r*t:null;
+  const T={
+   cad:['CAD · geometria','Dimensioni di ala, code e fusoliera da results.yaml.',[
+    ['Ala'],['Superficie',Y('wing_area_[m2]'),'m²',1],['Apertura',Y('wingspan_[m]'),'m',2],['Allungamento',Y('wing_aspect_ratio_[-]'),'',2],['Freccia',Y('wing_sweep_angle_[deg]'),'°',1],['Corda alla radice',Y('wing_root_[m]'),'m',2],['Rastremazione',Y('wing_taper_ratio_[-]'),'',3],['Corda all\'estremità (radice × rastremazione)',tip(Y('wing_root_[m]'),Y('wing_taper_ratio_[-]')),'m',2],['Corda media aerodinamica',Y('wing_mean_aerodynamic_chord_[m]'),'m',2],
+    ['Coda verticale'],['Superficie',Y('vtail_area_[m2]'),'m²',1],['Apertura',Y('vtailspan_[m]'),'m',2],['Freccia',Y('vtail_sweep_angle_[deg]'),'°',1],['Corda alla radice',Y('vtail_root_[m]'),'m',2],['Rastremazione',Y('vtail_taper_ratio_[-]'),'',3],
+    ...(Y('htail_area_[m2]')?[['Coda orizzontale'],['Superficie',Y('htail_area_[m2]'),'m²',1],['Apertura',Y('htailspan_[m]'),'m',2],['Freccia',Y('htail_sweep_angle_[deg]'),'°',1],['Corda alla radice',Y('htail_root_[m]'),'m',2],['Corda all\'estremità',Y('htail_tip_[m]'),'m',2]]:[]),
+    ...(Y('canard_area_[m2]')?[['Canard'],['Superficie',Y('canard_area_[m2]'),'m²',1],['Apertura',Y('canardspan_[m]'),'m',2],['Freccia',Y('canard_sweep_angle_[deg]'),'°',1]]:[]),
+    ['Fusoliera e motori'],['Lunghezza',Y('fuselage_length_[m]'),'m',2],['Larghezza',Y('fuselage_width_[m]'),'m',2],['Numero di motori',Y('engines_number_[-]'),'',0],['Diametro del fan',c.fan,'m',3]]],
+   avl:['AVL · aerodinamica','Grandezze di riferimento e casi di volo. Polari e baricentro li ricava AVL dalla geometria.',[
+    ['Riferimenti'],['S<sub>ref</sub> (superficie alare)',Y('wing_area_[m2]'),'m²',1],['c<sub>ref</sub> (corda media aerodinamica)',Y('wing_mean_aerodynamic_chord_[m]'),'m',2],['b<sub>ref</sub> (apertura)',Y('wingspan_[m]'),'m',2],
+    ['Casi di volo'],['Mach al decollo',vk(p,'take_off_mach'),'',2],['Mach in crociera subsonica',vk(p,'subsonic_cruise_mach'),'',2],['Quota di crociera subsonica',vk(p,'subsonic_cruise_altitude'),'m',0],['Mach in crociera supersonica',vk(p,'mach'),'',2],['Quota di crociera supersonica',vk(p,'supersonic_cruise_altitude'),'m',0],['α in crociera supersonica',vk(p,'supersonic_cruise_alfa'),'°',1],
+    ['Valori attesi da ARIEL'],['L/D subsonica',p.riepilogo.LD_sub,'',2],['L/D supersonica',p.riepilogo.LD_sup,'',2],['C<sub>L</sub> max al decollo · atterraggio',null,fmt(vk(p,'take_off_cl_max'),2)+' · '+fmt(vk(p,'landing_cl_max'),2),'txt']]],
+   sub:['Sottosistemi · masse e spinte','Valori statistici di ARIEL: la ripartizione per sottosistema non c\'è.',[
+    ['Masse'],['MTOM',Y('maximum_take-off_mass_[kg]'),'kg',0],['OEM',Y('operative_empty_mass_[kg]'),'kg',0],['Combustibile di missione',Y('fuel_capacity_[kg]'),'kg',0],['Passeggeri con bagaglio',pax&&mp?pax*mp:null,'kg',0],['Carico alare W/S',Y('W/S_Landing_[kg/m2]'),'kg/m²',0],
+    ['Propulsione'],['Spinta per motore richiesta',Y('T/engines_[N]')!=null?Y('T/engines_[N]')/1000:null,'kN',1],['T/W subsonico · supersonico',null,fmt(Y('T/W_sub[-]'),2)+' · '+fmt(Y('T/W_sup[-]'),2),'txt'],['sfc usata (Breguet)',p.valori[SFC]!=null?p.valori[SFC]/1e-5:null,'·10⁻⁵ kg/(N·s)',3],
+    ...(c.BPR!=null?[['BPR · OPR · Tt4',null,fmt(c.BPR,2)+' · '+fmt(c.OPR,1)+' · '+fmt(c.Tt4,0)+' K','txt'],['Spinta al decollo del motore',g.F00??g.Fn_decollo,'kN',0]]:[])]]};
+  b.innerHTML=`<p class="hint" style="margin:0 0 10px">Numeri di <b>${esc(p.nome)}</b>. «Copia» mette la tabella negli appunti come testo a colonne: si incolla in Excel. Il report completo con le motivazioni si rigenera nel Registro parametri: <code>python report.py "../ARIEL Lab/prove/${esc(p.id)}"</code>.</p>
+    <div class="grid3">${Object.entries(T).map(([k,[t,n,rows]])=>`<div class="card"><h2>${t}<span class="r"><button class="btn sm" data-copia="${k}"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copia</button></span></h2>
+      <table><tbody>${rows.map(r=>r.length===1?`<tr><th class="sec" colspan="2">${r[0]}</th></tr>`:`<tr><td>${r[0]}</td><td class="n">${r[3]==='txt'?esc(r[2]):r[1]==null?'—':fmt(r[1],r[3])+(r[2]?' '+esc(r[2]):'')}</td></tr>`).join('')}</tbody></table><p class="hint" style="margin-bottom:0">${n}</p></div>`).join('')}</div>`;
+  b.querySelectorAll('[data-copia]').forEach(x=>x.onclick=async()=>{const rows=T[x.dataset.copia][2],tsv=rows.map(r=>r.length===1?r[0]:[r[0].replace(/<[^>]+>/g,''),r[3]==='txt'?r[2]:r[1]==null?'':(+r[1].toFixed(r[3]+2)).toString().replace('.',','),r[3]==='txt'?'':r[2]].join('\t')).join('\n');
+    try{await navigator.clipboard.writeText(tsv);x.lastChild.textContent='Copiato'}catch(e){prompt('Copia con Ctrl+C:',tsv)}setTimeout(()=>x.lastChild.textContent='Copia',1500)})}
+
+// ---------- strumenti: versioni e confronto
+document.addEventListener('click',e=>{if(e.target.matches('figure img')){const d=document.createElement('div');d.className='lb';d.innerHTML=`<img src="${e.target.src}" alt="">`;d.onclick=()=>d.remove();document.body.append(d)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.lb').forEach(d=>d.remove())});
+function lista(){if(!S.prove.length){$('#lista').innerHTML='<tr><td class="empty">Nessuna versione salvata.</td></tr>';confronto();return}
+  $('#lista').innerHTML='<tr><th></th><th class="l">Versione</th><th class="l">Nota</th><th>Data</th><th>MTOM [t]</th><th>S [m²]</th><th>T/W</th><th>Motore</th><th></th></tr>'+S.prove.map(p=>{const r=p.riepilogo,e=p.emissioni;
+  return `<tr><td><input type="checkbox" data-c="${p.id}" ${CHK.has(p.id)?'checked':''} aria-label="Spunta per confrontare"></td><td style="white-space:normal;min-width:200px"><button class="nm" data-v="${p.id}">${p.rif?'<span class="star">★</span> ':''}${esc(p.nome)}</button>${p.id===SEL?' <span class="hint">· aperta</span>':''}</td><td class="hint" style="white-space:normal;max-width:300px">${esc(p.nota)}</td><td class="n">${esc(p.data.slice(0,16))}</td>
+  <td class="n">${r.ok?fmt(r.MTOM/1000,1):'<span class="ba">non converge</span>'}</td><td class="n">${r.ok?fmt(r.S,0):''}</td><td class="n">${r.ok?fmt(r.TW,2):''}</td><td class="hint">${e?(e.ok?(e.tipo==='crn'?'CRN':'semplice'):'errore'):''}</td>
+  <td><div class="acts"><button class="btn sm" data-r="${p.id}" title="Usa come riferimento">${p.rif?'★ riferimento':'☆ riferimento'}</button><button class="btn sm" data-n="${p.id}">Rinomina</button><button class="btn sm" data-x="${p.id}">Elimina</button></div></td></tr>`}).join('');confronto()}
+$('#lista').addEventListener('click',async e=>{const t=e.target.closest('[data-v],[data-c],[data-r],[data-n],[data-x]');if(!t)return;const d=t.dataset,p=id=>S.prove.find(x=>x.id===id);
+  if(d.v){apri(d.v);vai('2')}
   if(d.c){t.checked?CHK.add(d.c):CHK.delete(d.c);confronto()}
   if(d.r){await api('/api/prova/'+d.r,{rif:true});carica()}
-  if(d.i){V={...p(d.i).valori};campi()}
-  if(d.n){const q=p(d.n),n=prompt('Nome della prova',q.nome);if(n==null)return;const no=prompt('Nota',q.nota);await api('/api/prova/'+d.n,{nome:n,nota:no??q.nota});carica()}
-  if(d.x&&confirm('Cancellare la prova "'+p(d.x).nome+'"?')){await api('/api/prova/'+d.x+'/cancella',{});CHK.delete(d.x);if(SEL===d.x)SEL=null;carica()}});
+  if(d.n){const q=p(d.n),n=prompt('Nome della versione',q.nome);if(n==null)return;const no=prompt('Nota',q.nota);await api('/api/prova/'+d.n,{nome:n,nota:no??q.nota});carica()}
+  if(d.x&&confirm('Cancellare la versione "'+p(d.x).nome+'"? Si perdono anche i suoi output.')){await api('/api/prova/'+d.x+'/cancella',{});CHK.delete(d.x);if(SEL===d.x){SEL=null;V={}}carica()}});
 $('#esp').onclick=()=>{if(SEL)location.href='/api/esporta/'+encodeURIComponent(SEL)};
 $('#csv').onclick=()=>{if(CHK.size)location.href='/api/csv?ids='+[...CHK].join(',')};
-function confronto(){const ps=S.prove.filter(p=>CHK.has(p.id)).sort((a,b)=>(b.rif-a.rif)||(a.ts-b.ts));/* prima il riferimento, poi in ordine di tempo */
-  if(ps.length<2){$('#cmp').innerHTML='<p class="note" style="margin:0">Spunta da 2 a 4 prove nella tabella qui sopra. La prima colonna è il riferimento (o la prova più vecchia); in giallo i valori diversi da lei.</p>';return}
-  const P=ps.slice(0,4),b=P[0],row=(l,f,d,div)=>{const xs=P.map(f);return `<tr><td>${l}</td>${xs.map((x,i)=>`<td class="${i&&String(x)!==String(xs[0])?'dif':''}">${typeof x==='number'?fmt(x/(div||1),d):esc(x??'—')}</td>`).join('')}</tr>`};
-  let h=`<table><tr><th></th>${P.map(p=>`<th style="color:var(--fg);font-size:13px">${p.rif?'<span class="star">★</span> ':''}${esc(p.nome)}</th>`).join('')}</tr>`;
-  h+=`<tr><th colspan="${P.length+1}" style="text-align:left">Risultati</th></tr>`+KP.map(([k,l,u,d,div])=>row(l+(u?' ['+u+']':''),p=>p.riepilogo.ok?p.riepilogo[k]:'non converge',d,div)).join('')+row('Vincolo che fissa la spinta',p=>tv(p.riepilogo.attivo));
+function confronto(){const ps=S.prove.filter(p=>CHK.has(p.id)).sort((a,b)=>(b.rif-a.rif)||(a.ts-b.ts));
+  if(ps.length<2){$('#cmp').innerHTML='<p class="hint" style="margin:0">Spunta da 2 a 4 versioni qui sopra. La prima colonna è il riferimento (o la più vecchia); in giallo i valori diversi da lei.</p>';return}
+  const P=ps.slice(0,4),b=P[0],row=(l,f,d,div)=>{const xs=P.map(f);return `<tr><td>${l}</td>${xs.map((x,i)=>`<td class="n ${i&&String(x)!==String(xs[0])?'dif':''}">${typeof x==='number'?fmt(x/(div||1),d):esc(x??'—')}</td>`).join('')}</tr>`};
+  let h=`<table class="h"><tr><th></th>${P.map(p=>`<th style="color:var(--fg);white-space:normal">${p.rif?'<span class="star">★</span> ':''}${esc(p.nome)}</th>`).join('')}</tr>`;
+  h+=`<tr><th class="sec" colspan="${P.length+1}">Risultati</th></tr>`+KP.map(([k,l,u,d,div])=>row(l+(u?' ['+u+']':''),p=>p.riepilogo.ok?p.riepilogo[k]:'non converge',d,div)).join('')+row('Vincolo che fissa la spinta',p=>tv(p.riepilogo.attivo));
   const diff=S.schema.filter(c=>P.some(p=>String(p.valori[c.id])!==String(b.valori[c.id])));
-  h+=`<tr><th colspan="${P.length+1}" style="text-align:left">Input diversi (${diff.length})</th></tr>`+diff.map(c=>row(lab(c)+(un(c)?' ['+esc(un(c))+']':''),p=>c.scelte?sc(c,p.valori[c.id]):p.valori[c.id],4)).join('')+'</table>';
-  h+=`<div class="row" style="margin:14px 0 8px"><span class="note">Figure affiancate:</span><select id="cimg">${IMG.map(([f,t],i)=>`<option value="${i}">${t}</option>`).join('')}</select></div><div class="imgs" id="cimgs"></div>`;
-  $('#cmp').innerHTML=h;const draw=()=>{const f=IMG[$('#cimg').value][0];$('#cimgs').innerHTML=P.map(p=>p.riepilogo.ok?`<figure><img src="/prove/${encodeURIComponent(p.id)}/outputs/${f.split('/').map(encodeURIComponent).join('/')}"><figcaption>${esc(p.nome)}</figcaption></figure>`:'').join('')};$('#cimg').onchange=draw;draw()}
+  h+=`<tr><th class="sec" colspan="${P.length+1}">Input diversi (${diff.length})</th></tr>`+diff.map(c=>row(lab(c)+(un(c)?' ['+esc(un(c))+']':''),p=>c.scelte?sc(c,p.valori[c.id]):p.valori[c.id],4)).join('')+'</table>';
+  h+=`<div class="row" style="margin:14px 0 8px"><span class="hint">Figure affiancate:</span><select id="cimg">${IMG.map(([f,t],i)=>`<option value="${i}">${t}</option>`).join('')}</select></div><div class="grid3" id="cimgs"></div>`;
+  $('#cmp').innerHTML=h;const draw=()=>{const f=IMG[$('#cimg').value][0];$('#cimgs').innerHTML=P.map(p=>p.riepilogo.ok?`<figure><img src="${out(p,f)}" alt=""><figcaption>${esc(p.nome)}</figcaption></figure>`:'').join('')};$('#cimg').onchange=draw;draw()}
+
+// ---------- strumenti: studio di sensibilità
 function serieSel(){if($('#spar').options.length)return;$('#spar').innerHTML=GR.map(([g,t])=>{const cs=S.schema.filter(c=>!c.scelte&&info(c)[0]===g);return cs.length?`<optgroup label="${t}">${cs.map(c=>`<option value="${esc(c.id)}">${esc(labTxt(c))}${un(c)?' ['+esc(un(c))+']':''}</option>`).join('')}</optgroup>`:''}).join('');serieDef()}
 function serieDef(){const c=S.schema.find(c=>c.id===$('#spar').value);if(!c)return;const x=V[c.id];$('#sda').value=c.min??+(x*0.8).toPrecision(3);$('#sa').value=c.max??+(x*1.2).toPrecision(3)}
 $('#spar').onchange=serieDef;
@@ -331,21 +422,20 @@ $('#sgo').onclick=async()=>{const id=$('#spar').value,c=S.schema.find(c=>c.id===
   const nomeS=`serie ${labTxt(c)} ${fv(a)}–${fv(b)}`,pts=[];STOP=false;$('#sgo').disabled=true;$('#sstop').disabled=false;
   for(const [i,x] of xs.entries()){if(STOP)break;$('#sstat').textContent=`punto ${i+1} di ${xs.length}: ${labTxt(c)} = ${fv(+x.toPrecision(6))}`;
     const p=await calcola({...V,[id]:+x.toPrecision(10)},`${nomeS} · ${fv(+x.toPrecision(6))}`,'');pts.push([x,p.riepilogo]);grafici(labTxt(c)+(un(c)?' ['+un(c)+']':''),pts)}
-  $('#sstat').textContent=STOP?'Serie interrotta.':'Serie finita: ogni punto è tra le prove salvate.';$('#sgo').disabled=false;$('#sstop').disabled=true;carica()};
+  $('#sstat').textContent=STOP?'Serie interrotta.':'Serie finita: ogni punto è tra le versioni salvate.';$('#sgo').disabled=false;$('#sstop').disabled=true;carica(SEL)};
 function grafici(xl,pts){const G=[['MTOM','MTOM [t]',v=>v/1000],['S','Superficie alare [m²]',v=>v],['TW','T/W di progetto',v=>v],['LD_sup','L/D supersonica',v=>v]];
-  $('#charts').innerHTML=G.map(([k,t,f])=>`<div class="box"><h2>${t}</h2>${svg(pts.map(([x,r])=>[x,r.ok&&r[k]!=null?f(r[k]):null]),xl)}</div>`).join('')}
+  $('#charts').innerHTML=G.map(([k,t,f])=>`<div class="card"><h2>${t}</h2>${svg(pts.map(([x,r])=>[x,r.ok&&r[k]!=null?f(r[k]):null]),xl)}</div>`).join('')}
 function svg(P,xl){const W=400,H=230,m={l:54,r:12,t:10,b:40},ok=P.filter(p=>p[1]!=null),xs=P.map(p=>p[0]),ys=ok.map(p=>p[1]);
   if(!P.length)return'';const x0=Math.min(...xs),x1=Math.max(...xs)||x0+1;let y0=Math.min(...ys),y1=Math.max(...ys);if(!ys.length){y0=0;y1=1}if(y0===y1){y0-=1;y1+=1}const pad=(y1-y0)*.08;y0-=pad;y1+=pad;
   const X=x=>m.l+(x-x0)/((x1-x0)||1)*(W-m.l-m.r),Y=y=>H-m.b-(y-y0)/(y1-y0)*(H-m.t-m.b),tk=(a,b)=>[0,.25,.5,.75,1].map(f=>a+(b-a)*f);
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%"><g stroke="var(--line)">${tk(y0,y1).map(y=>`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(y)}" y2="${Y(y)}"/>`).join('')}</g>
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(xl)}"><g stroke="var(--line)">${tk(y0,y1).map(y=>`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(y)}" y2="${Y(y)}"/>`).join('')}</g>
   ${tk(y0,y1).map(y=>`<text x="${m.l-6}" y="${Y(y)+4}" text-anchor="end">${fv(+y.toPrecision(4))}</text>`).join('')}${tk(x0,x1).map(x=>`<text x="${X(x)}" y="${H-m.b+16}" text-anchor="middle">${fv(+x.toPrecision(4))}</text>`).join('')}
   <text x="${(W+m.l)/2}" y="${H-4}" text-anchor="middle">${esc(xl)}</text>
   <polyline fill="none" stroke="var(--acc)" stroke-width="2" points="${ok.map(p=>X(p[0])+','+Y(p[1])).join(' ')}"/>
-  ${ok.map(p=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" fill="var(--acc)"><title>${fv(+p[0].toPrecision(6))} → ${fv(+p[1].toPrecision(5))}</title></circle>`).join('')}
+  ${ok.map(p=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="4" fill="var(--acc)" stroke="var(--card)" stroke-width="2"><title>${fv(+p[0].toPrecision(6))} → ${fv(+p[1].toPrecision(5))}</title></circle>`).join('')}
   ${P.filter(p=>p[1]==null).map(p=>`<text x="${X(p[0])}" y="${H-m.b-6}" text-anchor="middle" style="fill:var(--bad);font-size:14px;font-weight:700">✕<title>non converge</title></text>`).join('')}</svg>`}
-function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));['prova','conf','serie','em'].forEach(x=>$('#t-'+x).classList.toggle('hid',x!==t))}
-$('#tabs').onclick=e=>{if(e.target.dataset.t)tab(e.target.dataset.t)};
-carica();setInterval(async()=>{if(BUSY)return;const s=await api('/api/stato');stato(s.ariel_pronto,s.job);if(!!s.job!==!!S.job)carica()},5000);
+
+carica();setInterval(async()=>{if(BUSY)return;const s=await api('/api/stato');stato(s.ariel_pronto,s.job);if(!!s.job!==!!S.job||s.prove.length!==S.prove.length)carica()},5000);
 </script>
 </body>
 </html>

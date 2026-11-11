@@ -17,6 +17,22 @@ def valori_validi():
     return v
 
 
+class Fonti(unittest.TestCase):  # fonte e motivo di ogni input, letti dal Registro parametri (sola lettura)
+    def test_legge_fonte_e_commento(self):
+        d = tempfile.mkdtemp(); f = os.path.join(d, 'valori.json')
+        json.dump({'valori': {'H_Tail': {'valore': 1, 'stato': 'fissato', 'origine': {'strumento': 'Trade-off', 'file': 'riunione 29/10'},
+                                         'commento': 'coda sì'}, 'vuoto': {}}}, open(f, 'w', encoding='utf-8'))
+        r = app.fonti(f)
+        self.assertEqual(r['H_Tail'], {'valore': 1, 'stato': 'fissato', 'fonte': 'Trade-off', 'file': 'riunione 29/10', 'commento': 'coda sì'})
+        self.assertEqual(r['vuoto']['fonte'], '')
+
+    def test_registro_assente_o_rotto(self):
+        d = tempfile.mkdtemp()
+        self.assertEqual(app.fonti(os.path.join(d, 'non_esiste.json')), {})
+        open(os.path.join(d, 'rotto.json'), 'w').write('{non json')
+        self.assertEqual(app.fonti(os.path.join(d, 'rotto.json')), {})
+
+
 class Schema(unittest.TestCase):
     def test_un_campo_per_chiave_del_template(self):
         s = app.schema(TEMPLATE)
@@ -668,6 +684,24 @@ class Lavoro(unittest.TestCase):
             self.lab._motore = vero
         e = self.lab.prova(p['id'])['emissioni']
         self.assertFalse(e['ok']); self.assertIn('disco pieno', e['errore']); self.assertIsNone(self.lab.job)
+
+
+    def test_24_f3_con_fattore_di_installazione(self):  # TSFC installato = TSFC / (1 - 0,05) (Mattingly)
+        v = valori_validi(); v['crew/crew_number [-]'] = 19
+        p = self.lab.calcola(v, 'f3 inst', '')
+        self.lab.f3(p['id'], fattore=1 / 0.95).join(120)
+        f = self.lab.prova(p['id'])['f3_esito']
+        self.assertEqual(f['esito'], 'converge', f); self.assertAlmostEqual(f['fattore'], 1 / 0.95, 12)
+        self.assertAlmostEqual(f['sfc'][-1], TSFC_DATI / 0.95, 12)
+
+
+    def test_25_due_dashboard_non_sulla_stessa_porta(self):  # su Windows SO_REUSEADDR permetteva due server sulla stessa porta
+        a = app.server(self.lab, 0)
+        try:
+            with self.assertRaises(OSError):
+                app.server(self.lab, a.server_address[1])
+        finally:
+            a.server_close()
 
 
 if __name__ == '__main__':

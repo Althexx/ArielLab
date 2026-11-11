@@ -494,21 +494,22 @@ class Lab:
 
     SFC = 'flight_expected_performances/sfc [(kg/s)/N]'
 
-    def f3(self, pid, giri=5, tol=0.01):
+    def f3(self, pid, giri=5, tol=0.01, fattore=1.0):
         """Anello F3 in un thread: sfc <- TSFC di progetto del motore, nuovo velivolo (opzione 2), motore (analisi semplice),
-        finche' la sfc cambia meno di tol. Ogni giro e' una prova nuova; l'esito va in prova.json['f3_esito'] della prova di partenza."""
+        finche' la sfc cambia meno di tol.
+        fattore: TSFC installato = TSFC del motore x fattore (es. 1/(1-0,05): perdite di installazione del 5 %, Mattingly). Ogni giro e' una prova nuova; l'esito va in prova.json['f3_esito'] della prova di partenza."""
         with self._lock_job:
             if self.job:
                 raise ValueError("ARIEL sta gia' calcolando motore ed emissioni")
             if not self.prova(pid)['riepilogo'].get('ok'):
                 raise ValueError("la prova non converge: non c'e' un velivolo su cui progettare il motore")
             self.job = {'id': pid, 'inizio': time.time(), 'tipo': 'f3', 'f3': {'giro': 0, 'sfc': []}}
-        t = threading.Thread(target=self._f3, args=(pid, giri, tol), daemon=True)
+        t = threading.Thread(target=self._f3, args=(pid, giri, tol, fattore), daemon=True)
         t.start()
         return t
 
-    def _f3(self, pid0, giri, tol):
-        storia = {'esito': None, 'sfc': [], 'prove': [pid0]}
+    def _f3(self, pid0, giri, tol, fattore=1.0):
+        storia = {'esito': None, 'sfc': [], 'prove': [pid0], 'fattore': fattore}
         try:
             cur = pid0
             for k in range(giri + 1):
@@ -517,7 +518,7 @@ class Lab:
                     (self.dal_archivio(cur, 'semplice') or self._motore(cur, 'semplice'))
                 if not e.get('ok'):
                     storia['esito'] = 'fermato: motore non calcolato (%s)' % e.get('errore', '?'); break
-                sfc, tsfc = p['valori'][self.SFC], motore.tsfc_si(os.path.join(self._p(cur), 'outputs'))
+                sfc, tsfc = p['valori'][self.SFC], motore.tsfc_si(os.path.join(self._p(cur), 'outputs')) * fattore
                 storia['sfc'] = (storia['sfc'] or [sfc]) + [tsfc]
                 self.job['f3'] = {'giro': k, 'sfc': storia['sfc']}
                 if abs(tsfc - sfc) < tol * sfc:
@@ -587,6 +588,19 @@ class Lab:
         return f.getvalue()
 
 
+REGISTRO = os.path.join(os.path.dirname(QUI), 'Registro parametri', 'valori.json')
+
+
+def fonti(path=REGISTRO):
+    """Valore, stato, fonte e motivo di ogni input secondo il Registro parametri; {} se il registro manca (altro PC) o è illeggibile."""
+    try:
+        v = json.load(open(path, encoding='utf-8')).get('valori') or {}
+    except (OSError, ValueError):
+        return {}
+    return {k: {'valore': x.get('valore'), 'stato': x.get('stato', ''), 'fonte': (x.get('origine') or {}).get('strumento', ''),
+                'file': (x.get('origine') or {}).get('file', ''), 'commento': x.get('commento', '')} for k, x in v.items()}
+
+
 def esporta(lab, pid):
     return lab.esporta(pid)
 
@@ -621,6 +635,8 @@ def server(lab, porta):
                     return self._invia(lab.stato())
                 if p == '/api/vincoli':
                     return self._invia(lab.vincoli())
+                if p == '/api/fonti':
+                    return self._invia(fonti())
                 if p == '/api/motori':
                     return self._invia(lab.motori(parse_qs(u.query).get('criterio', ['MTOM'])[0]))
                 if p == '/api/csv':
@@ -648,7 +664,7 @@ def server(lab, porta):
                     return self._invia(lab.calcola(d['valori'], d.get('nome', ''), d.get('nota', '')))
                 m = re.fullmatch(r'/api/prova/([\w.\-]+)(/cancella|/emissioni|/f3)?', p)
                 if m and m.group(2) == '/f3':
-                    lab.f3(m.group(1)); return self._invia({'ok': True})
+                    lab.f3(m.group(1), fattore=float(self._json().get('fattore', 1.0))); return self._invia({'ok': True})
                 if m and m.group(2) == '/emissioni':
                     lab.emissioni(m.group(1), self._json().get('tipo', 'semplice')); return self._invia({'ok': True})
                 if m and m.group(2):
@@ -661,7 +677,10 @@ def server(lab, porta):
             except (KeyError, OSError, ValueError) as e:
                 self._invia({'errore': str(e)}, codice=400)
 
-    return ThreadingHTTPServer(('127.0.0.1', porta), H)
+    class Server(ThreadingHTTPServer):
+        allow_reuse_address = False  # su Windows due dashboard sulla stessa porta si dividerebbero le richieste
+
+    return Server(('127.0.0.1', porta), H)
 
 
 # ---------------------------------------------------------------- avvio
