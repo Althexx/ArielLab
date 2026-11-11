@@ -19,12 +19,12 @@ Serve la release di ARIEL-SST del 27/10/2026, quella del corso. **L'eseguibile n
 
 ## Rifare un calcolo della squadra (stessi numeri della Control Room)
 I numeri della Control Room vengono da una **versione** calcolata sul PC del PM. Per riottenerli identici sul proprio PC:
-1. Fai l'installazione qui sopra. Al punto 3 usa i file della cartella del progetto sul Drive del team («Progetto Team 3 · DDS v0»):
-   - `2_ARIEL/HLInputs.yaml` → `inputs_iniziali/HLInputs.yaml`;
-   - `6_Fonti_del_team/Database Statistico/StatDatabase.xlsx` → `inputs_iniziali/StatDatabase.xlsx`.
+1. Fai l'installazione qui sopra. Al punto 3 usa i file della cartella del progetto sul Drive del team («Topic 3 · Team 3»):
+   - `03_Calcoli/ARIEL/HLInputs.yaml` → `inputs_iniziali/HLInputs.yaml`;
+   - `04_Dati/Database_statistico/StatDatabase.xlsx` → `inputs_iniziali/StatDatabase.xlsx`.
 2. Se avevi già usato ARIEL Lab, cancella prima la cartella `lavoro/inputs`: così riparte dai file nuovi. Lascia `ARIEL-SST.exe` in `lavoro`.
 3. Avvia, controlla che i 37 input siano quelli della versione e premi **Calcola il velivolo**.
-4. Confronta il tuo `prove/<prova>/outputs/Layer1/results.yaml` con `2_ARIEL/results.yaml` del Drive: devono coincidere.
+4. Confronta il tuo `prove/<prova>/outputs/Layer1/results.yaml` con `03_Calcoli/ARIEL/results.yaml` del Drive: devono coincidere.
 
 Il motore (opzione 3, «Analisi semplice» o «Anello F3») si rifà dal passo 3 della pagina. Usa un ottimizzatore genetico, quindi è da verificare che dia esattamente gli stessi numeri; il velivolo (Layer 1) li dà identici.
 
