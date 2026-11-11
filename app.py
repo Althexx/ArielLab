@@ -14,8 +14,8 @@ except ImportError:
     sys.exit('Manca PyYAML: apri il Prompt dei comandi e scrivi  pip install pyyaml  poi riavvia.')
 
 QUI = os.path.dirname(os.path.abspath(__file__))
-IASD = os.path.join(os.path.expanduser('~'), 'Desktop', 'PROF CLAUDIO', 'Integrated aerospace systems design')
-# da dove si copia ARIEL al primo avvio: la copia in IASD/ARIEL (gli originali restano sul Desktop)
+IASD = os.path.dirname(QUI)
+# da dove si copia ARIEL al primo avvio: la cartella ARIEL accanto ad ARIEL Lab, se c'è (sul PC del PM: Strumenti/ARIEL)
 CORSO_EXE = os.path.join(IASD, 'ARIEL', 'New ARIEL Release', 'windows', 'ARIEL-SST.exe')
 CORSO_TEMPLATE = os.path.join(IASD, 'ARIEL', 'New ARIEL Release', 'HLInputs_TEMPLATE.yaml')
 CORSO_INPUTS = os.path.join(IASD, 'ARIEL', 'Topic_3_Mach1.8_Airliner_100pax', 'Topic_3_Mach1.8_Airliner_100pax', 'windows', 'inputs')
